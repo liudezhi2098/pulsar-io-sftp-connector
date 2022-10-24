@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.sftp;
+package org.apache.pulsar.io.sftp.source;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -54,9 +54,9 @@ public class FileListingThread extends Thread {
     private final long pollingInterval;
 
     public FileListingThread(FileSourceConfig fileConfig,
-            BlockingQueue<File> workQueue,
-            BlockingQueue<File> inProcess,
-            BlockingQueue<File> recentlyProcessed) {
+                             BlockingQueue<File> workQueue,
+                             BlockingQueue<File> inProcess,
+                             BlockingQueue<File> recentlyProcessed) {
         this.workQueue = workQueue;
         this.inProcess = inProcess;
         this.recentlyProcessed = recentlyProcessed;

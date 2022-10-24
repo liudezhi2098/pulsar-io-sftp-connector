@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.sftp;
+package org.apache.pulsar.io.sftp.source;
 
 import java.io.File;
 import java.util.Map;
