@@ -17,7 +17,9 @@
 # under the License.
 #
 
-name: file
-description: Reads data from local filesystem
-sourceClass: org.apache.pulsar.io.sftp.FileSource
-sourceConfigClass: org.apache.pulsar.io.sftp.FileSourceConfig
+name: sftp
+description: Reads data from sftp filesystem
+sinkClass: org.apache.pulsar.io.sftp.sink.FileSink
+sinkConfigClass: org.apache.pulsar.io.sftp.sink.FileSinkConfig
+sourceClass: org.apache.pulsar.io.sftp.source.FileSource
+sourceConfigClass: org.apache.pulsar.io.sftp.source.FileSourceConfig

@@ -16,19 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.sftp;
+package org.apache.pulsar.io.sftp.source;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import org.apache.pulsar.io.core.PushSource;
-import org.apache.pulsar.io.sftp.utils.GZipFiles;
-import org.apache.pulsar.io.sftp.utils.ZipFiles;
 
 /**
  * Worker thread that consumes the contents of the files
@@ -70,12 +67,13 @@ public class FileConsumerThread extends Thread {
 
     private void consumeFile(File file) {
         final AtomicInteger idx = new AtomicInteger(1);
-        try (Stream<String> lines = getLines(file)) {
-             lines.forEachOrdered(line -> process(file, idx.getAndIncrement(), line));
+        try {
+            process(file, idx.getAndIncrement(), getContents(file));
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         } finally {
-
             boolean removed = false;
             do {
                 removed = inProcess.remove(file);
@@ -88,20 +86,16 @@ public class FileConsumerThread extends Thread {
         }
     }
 
-    private Stream<String> getLines(File file) throws IOException {
-        if (file == null) {
-            return null;
-        } else if (GZipFiles.isGzip(file)) {
-            return GZipFiles.lines(Paths.get(file.getAbsolutePath()));
-        } else if (ZipFiles.isZip(file)) {
-            return ZipFiles.lines(Paths.get(file.getAbsolutePath()));
-        } else {
-            return Files.lines(Paths.get(file.getAbsolutePath()), Charset.defaultCharset());
-        }
+    private byte[] getContents(File file) throws IOException {
+        DataInputStream reader = new DataInputStream(new FileInputStream(file));
+        int nBytesToRead = reader.available();
+        byte[] contents = new byte[nBytesToRead];
+        reader.read(contents);
+        return contents;
     }
 
-    private void process(File srcFile, int lineNumber, String line) {
-        source.consume(new FileRecord(srcFile, lineNumber, line.getBytes()));
+    private void process(File srcFile, int lineNumber, byte[] contents) throws NoSuchAlgorithmException, IOException {
+        source.consume(new FileSourceRecord(srcFile, lineNumber, contents));
     }
 
 }
