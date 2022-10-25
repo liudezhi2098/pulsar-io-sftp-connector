@@ -33,7 +33,6 @@ public class FileSink extends AbstractSink<byte[]> {
     private FileSinkConfig fileSinkConfig;
     private ExecutorService executor;
     private BlockingQueue<Record<byte[]>> records;
-    private static String path = "/Volumes/Macintosh-HD-Data/Users/dezhiliu/worker/poc/write";
     private static final Logger log = LoggerFactory.getLogger(FileSink.class);
 
     @Override
@@ -43,7 +42,7 @@ public class FileSink extends AbstractSink<byte[]> {
         fileSinkConfig.validate();
         this.fileSinkConfig = fileSinkConfig;
         // One extra for the File listing thread, and another for the cleanup thread
-        executor = Executors.newFixedThreadPool(fileSinkConfig.getNumWorkers() + 2);
+        executor = Executors.newFixedThreadPool(fileSinkConfig.getNumWorkers());
 
         for (int idx = 0; idx < fileSinkConfig.getNumWorkers(); idx++) {
             executor.execute(new FileWriteThread(this));
@@ -67,4 +66,5 @@ public class FileSink extends AbstractSink<byte[]> {
     public BlockingQueue<Record<byte[]>> getQueue() {
         return records;
     }
+
 }

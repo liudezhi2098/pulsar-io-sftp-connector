@@ -44,9 +44,6 @@ public class FileSinkConfig implements Serializable {
 
     /**
      * The number of worker threads that will be processing the files.
-     * This allows you to process a larger number of files concurrently.
-     * However, setting this to a value greater than 1 will result in the data
-     * from multiple files being "intermingled" in the target topic.
      */
     private Integer numWorkers = 1;
 

@@ -19,8 +19,6 @@
 package org.apache.pulsar.io.sftp.sink;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.Sink;
 import org.apache.pulsar.io.core.SinkContext;
@@ -35,11 +33,8 @@ public abstract class AbstractSink<T> implements Sink<T> {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractSink.class);
 
-    protected BlockingQueue<Record<T>> records;
-
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
-        records = new LinkedBlockingQueue<>();
         FileSinkConfig fileSinkConfig = FileSinkConfig.load(config);
         fileSinkConfig.validate();
     }
