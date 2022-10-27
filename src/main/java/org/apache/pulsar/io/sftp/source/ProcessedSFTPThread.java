@@ -65,11 +65,11 @@ public class ProcessedSFTPThread extends Thread {
                 sftp.createDirIfNotExist(dirs,fileConfig.getMovedDirectory(),dirs.length,0);
             }
             sftp.rename(oldFilePath + "/" + fileName,newFilePath + "/" + fileName);
-            log.info(String.format("copy file %s from '%s' to '%s'",fileName,oldFilePath + "/" + fileName,newFilePath + "/" + fileName));
+            log.info(String.format("Copied file %s from '%s' to '%s'",fileName,oldFilePath + "/" + fileName,newFilePath + "/" + fileName));
         } else {
             String filePath = Objects.equals(".",absolutePath) ? fileConfig.getInputDirectory() + "/" + fileName : fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
             sftp.deleteFile(filePath);
-            log.info(String.format("delete file %s on '%s'",fileName,filePath));
+            log.info(String.format("Deleted file %s on '%s'",fileName,filePath));
         }
     }
 }

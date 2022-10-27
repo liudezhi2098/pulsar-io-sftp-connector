@@ -70,10 +70,6 @@ public class SFTPListingThread extends Thread {
                     String illegalFileDir = fileConfig.getIllegalFileDirectory();
                     boolean recurse = fileConfig.getRecurse();
                     Double maximumSize =  fileConfig.getMaximumSize();
-                    boolean ignoreHiddenFiles = fileConfig.getIgnoreHiddenFiles();
-                    String fileFilter = fileConfig.getFileFilter();
-                    final Pattern filePattern = Pattern.compile(Optional.ofNullable(fileFilter)
-                            .orElse("[^\\.].*"));
 
                     Set<SFTPSourceRecord> listing = new HashSet<>();
                     try {
@@ -102,10 +98,6 @@ public class SFTPListingThread extends Thread {
                                     log.info("File size  >  maximumSize, will be moved to illegal file path : '" + illegalFilePath + "'");
                                     sftp.rename(oldFilePath + "/" + fileName,illegalFilePath + "/" + fileName);
 
-                                } else if((Optional.of(ignoreHiddenFiles).orElse(true) && fileName.startsWith("."))
-                                        || !filePattern.matcher(fileName).matches()){
-                                    //whether ignore hidden file which start with `.` & Filter files that match the  `fileFilter`
-                                    log.warn("Ignore hidden file or filter file : " + fileName);
                                 } else {
                                     record.getProperties().put(FILE_ABSOLUTE_PATH,StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
                                     workQueue.offer(record);
@@ -131,17 +123,28 @@ public class SFTPListingThread extends Thread {
 
     private void performListing(final String directory,SFTPUtil sftp,Set<SFTPSourceRecord> listing,Boolean isRecursive)
             throws NoSuchAlgorithmException, IOException {
+        boolean ignoreHiddenFiles = fileConfig.getIgnoreHiddenFiles();
+        String fileFilter = fileConfig.getFileFilter();
+        final Pattern filePattern = Pattern.compile(Optional.ofNullable(fileFilter)
+                .orElse("[^\\.].*"));
+
         Vector<ChannelSftp.LsEntry> fileAndFolderList = sftp.listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
                 String fileName = item.getFilename();
-                byte[] file =  sftp.download(directory,item.getFilename());
-                if(file == null){
-                    log.error("May download file '" + fileName + "'  from '" + directory + "' failed , please check and download next file");
-                    return;
+                if((Optional.of(ignoreHiddenFiles).orElse(true) && fileName.startsWith("."))
+                        || !filePattern.matcher(fileName).matches()){
+                    //whether ignore hidden file which start with `.` & Filter files that match the  `fileFilter`
+                    log.warn("Ignore hidden file or filter file : " + fileName);
+                } else {
+                    byte[] file =  sftp.download(directory,item.getFilename());
+                    if(file == null){
+                        log.error("May download file '" + fileName + "'  from '" + directory + "' failed , please check and download next file");
+                        return;
+                    }
+                    SFTPSourceRecord record = new SFTPSourceRecord(fileName,file,directory,item.getAttrs().getAtimeString());
+                    listing.add(record);
                 }
-                SFTPSourceRecord record = new SFTPSourceRecord(fileName,file,directory,item.getAttrs().getAtimeString());
-                listing.add(record);
             } else if (!(".".equals(item.getFilename()) || "..".equals(item.getFilename()))) {
                 if(isRecursive){
                     performListing(directory + "/" + item.getFilename(),sftp,listing, true);
