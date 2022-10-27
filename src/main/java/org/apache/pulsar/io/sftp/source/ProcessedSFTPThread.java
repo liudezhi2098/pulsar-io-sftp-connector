@@ -21,6 +21,7 @@ package org.apache.pulsar.io.sftp.source;
 import static org.apache.pulsar.io.sftp.utils.Constants.*;
 import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
@@ -56,25 +57,17 @@ public class ProcessedSFTPThread extends Thread {
         String absolutePath = record.getProperties().get(FILE_ABSOLUTE_PATH);
         String fileName = record.getProperties().get(FILE_NAME);
         if (fileConfig.getKeepFile()) {
-            String oldFilePath = fileConfig.getInputDirectory() + "/" + absolutePath;
-            String newFilePath = fileConfig.getMovedDirectory() + "/" + absolutePath;
+            String oldFilePath = StringUtils.isBlank(absolutePath) ? fileConfig.getInputDirectory() : fileConfig.getInputDirectory() + "/" + absolutePath;
+            String newFilePath = StringUtils.isBlank(absolutePath) ? fileConfig.getMovedDirectory() : fileConfig.getMovedDirectory() + "/" + absolutePath;
             //if `movedDirectory` not existed, create it
             if(!sftp.isDirExist(newFilePath)){
                 String[] dirs = ("/" + absolutePath).split("/");
                 sftp.createDirIfNotExist(dirs,fileConfig.getMovedDirectory(),dirs.length,0);
             }
-            //sftp.rename(oldFilePath + "/" + fileName,newFilePath + "/" + fileName);
-            //todo
-            System.out.println("***********************");
-            System.out.println(String.format("copy file %s from %s to %s",fileName,oldFilePath + "/" + fileName,newFilePath + "/" + fileName));
-            System.out.println("***********************");
+            sftp.rename(oldFilePath + "/" + fileName,newFilePath + "/" + fileName);
         } else {
-            String filePath = fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
-            //sftp.deleteFile(filePath);
-            //todo
-            System.out.println("***********************");
-            System.out.println(String.format("delete file %s on %s",fileName,filePath));
-            System.out.println("***********************");
+            String filePath = StringUtils.isBlank(absolutePath) ? fileConfig.getInputDirectory() + "/" + fileName : fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
+            sftp.deleteFile(filePath);
         }
         try {
             sleep(5*1000);

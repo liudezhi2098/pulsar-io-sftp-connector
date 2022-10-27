@@ -53,17 +53,6 @@ public class SFTPConsumerThread extends Thread {
                     added = inProcess.add(file);
                 } while (!added);
 
-                //todo
-                System.out.println("***************************************");
-                System.out.println("***************workQueue***************");
-                workQueue.forEach(System.out::println);
-                System.out.println("***************inProcess***************");
-                inProcess.forEach(System.out::println);
-                System.out.println("***************recentlyProcessed***************");
-                recentlyProcessed.forEach(System.out::println);
-                System.out.println("***************************************");
-                sleep(1*1000);
-
                 consumeFile(file);
             }
         } catch (InterruptedException e) {

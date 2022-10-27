@@ -11,7 +11,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.io.sftp.source.ProcessedSFTPThread;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
 import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.junit.Ignore;
 
+@Ignore
 public class ProcessedSFTPThreadTest {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
         String host = "20.120.20.201";

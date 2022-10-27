@@ -4,15 +4,17 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
+import org.junit.Ignore;
 
+@Ignore
 public class SFTPSourceTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String host = "20.120.20.201";
         String username = "sftp_user";
         String password = "12345678";
-        String inputDirectory = "/sftpdata/read";
-        String movedDirectory = "/sftpdata/fujun";
-        String illegalFileDirectory = "/sftpdata/testdir";
+        String inputDirectory = "/sftpdata/input";
+        String movedDirectory = "/sftpdata/moved";
+        String illegalFileDirectory = "/sftpdata/illegal_file";
         Map<String,Object> config = new HashMap<>();
         config.put("host",host);
         config.put("username",username);
@@ -20,12 +22,7 @@ public class SFTPSourceTest {
         config.put("inputDirectory",inputDirectory);
         config.put("movedDirectory",movedDirectory);
         config.put("illegalFileDirectory",illegalFileDirectory);
-        try {
-            SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
-            sftpConfig.validate();
-            System.out.println(sftpConfig);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
+        sftpConfig.validate();
     }
 }

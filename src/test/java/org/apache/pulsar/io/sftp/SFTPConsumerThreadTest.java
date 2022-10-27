@@ -12,7 +12,9 @@ import org.apache.pulsar.io.sftp.source.SFTPConsumerThread;
 import org.apache.pulsar.io.sftp.source.SFTPSource;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
 import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.junit.Ignore;
 
+@Ignore
 public class SFTPConsumerThreadTest {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
         String host = "20.120.20.201";

@@ -8,7 +8,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.io.sftp.source.SFTPListingThread;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
 import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.junit.Ignore;
 
+@Ignore
 public class SFTPListingThreadTest {
 
     public static void main(String[] args) throws IOException {

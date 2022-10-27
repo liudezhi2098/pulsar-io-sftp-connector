@@ -111,8 +111,6 @@ public class SFTPListingThread extends Thread {
                             }
                         }
                         queueLastUpdated.set(System.currentTimeMillis());
-                        //todo
-                        workQueue.forEach(System.out::println);
                     }
 
                 } finally {
