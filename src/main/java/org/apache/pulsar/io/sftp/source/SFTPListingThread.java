@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
@@ -86,33 +87,34 @@ public class SFTPListingThread extends Thread {
 
                         for (SFTPSourceRecord record: listing) {
                             String absolutePath = record.getProperties().get(FILE_ABSOLUTE_PATH);
+                            String realAbsolutePath = absolutePath.replaceFirst(inputDir,"").replaceFirst("/","");
                             String fileName = record.getProperties().get(FILE_NAME);
                             if (!workQueue.contains(record)) {
                                 //file size > `maximumSize` (default 1M) , move file to `illegalFileDirectory`
                                 if(record.getValue().length * 8 > maximumSize){
-                                    String oldFilePath = inputDir + "/" + absolutePath;
-                                    String illegalFilePath = illegalFileDir + "/" + absolutePath;
+                                    String oldFilePath = inputDir + "/" + realAbsolutePath;
+                                    String illegalFilePath = illegalFileDir + "/" + realAbsolutePath;
                                     //`illegalFileDir` not existed, create it first
                                     if(!sftp.isDirExist(illegalFilePath)){
-                                        String[] dirs = ("/" + absolutePath).split("/");
+                                        String[] dirs = ("/" + realAbsolutePath).split("/");
                                         sftp.createDirIfNotExist(dirs,illegalFileDir,dirs.length,0);
                                     }
+                                    log.info("File size  >  maximumSize, will be moved to illegal file path : '" + illegalFilePath + "'");
                                     sftp.rename(oldFilePath + "/" + fileName,illegalFilePath + "/" + fileName);
+
                                 } else if((Optional.of(ignoreHiddenFiles).orElse(true) && fileName.startsWith("."))
                                         || !filePattern.matcher(fileName).matches()){
                                     //whether ignore hidden file which start with `.` & Filter files that match the  `fileFilter`
                                     log.warn("Ignore hidden file or filter file : " + fileName);
                                 } else {
-                                    String originAbsolutePath = record.getProperties().get(FILE_ABSOLUTE_PATH);
-                                    String realAbsolutePath = originAbsolutePath.replaceFirst(inputDir,"").replaceFirst("/","");
-                                    record.getProperties().put(FILE_ABSOLUTE_PATH,realAbsolutePath);
+                                    record.getProperties().put(FILE_ABSOLUTE_PATH,StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
                                     workQueue.offer(record);
+                                    log.info("Add File to work queue : " + record);
                                 }
                             }
                         }
                         queueLastUpdated.set(System.currentTimeMillis());
                     }
-
                 } finally {
                     listingLock.unlock();
                     sftp.logout();

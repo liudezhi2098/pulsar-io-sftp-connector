@@ -29,12 +29,13 @@ public class ProcessedSFTPThreadTest {
         config.put("inputDirectory",inputDirectory);
         config.put("movedDirectory",movedDirectory);
         config.put("illegalFileDirectory",illegalFileDirectory);
+        config.put("keepFile",false);
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
 
         BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
         for (int i = 0; i < 10; i++) {
-            SFTPSourceRecord record = new SFTPSourceRecord("fujun"+i+".txt",("fujun"+i).getBytes(StandardCharsets.UTF_8),"data",new Date().toString());
+            SFTPSourceRecord record = new SFTPSourceRecord("fujun"+i+".txt",("fujun"+i).getBytes(StandardCharsets.UTF_8),".",new Date().toString());
             recentlyProcessed.offer(record);
         }
         Thread t = new ProcessedSFTPThread(sftpConfig,recentlyProcessed);

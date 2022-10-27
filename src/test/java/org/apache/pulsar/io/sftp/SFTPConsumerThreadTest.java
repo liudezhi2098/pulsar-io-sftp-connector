@@ -35,7 +35,7 @@ public class SFTPConsumerThreadTest {
 
         BlockingQueue<SFTPSourceRecord> workQueue = new LinkedBlockingQueue<>();
         for (int i = 0; i < 10; i++) {
-            SFTPSourceRecord record = new SFTPSourceRecord("fujun"+i+".txt",("fujun"+i).getBytes(StandardCharsets.UTF_8),"",new Date().toString());
+            SFTPSourceRecord record = new SFTPSourceRecord("fujun"+i+".txt",("fujun"+i).getBytes(StandardCharsets.UTF_8),".",new Date().toString());
             workQueue.offer(record);
         }
         BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();

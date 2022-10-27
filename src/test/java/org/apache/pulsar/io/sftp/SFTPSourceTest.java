@@ -1,14 +1,13 @@
 package org.apache.pulsar.io.sftp;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
+import org.apache.pulsar.io.sftp.source.SFTPSource;
 import org.junit.Ignore;
 
 @Ignore
 public class SFTPSourceTest {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         String host = "20.120.20.201";
         String username = "sftp_user";
         String password = "12345678";
@@ -22,7 +21,9 @@ public class SFTPSourceTest {
         config.put("inputDirectory",inputDirectory);
         config.put("movedDirectory",movedDirectory);
         config.put("illegalFileDirectory",illegalFileDirectory);
-        SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
-        sftpConfig.validate();
+
+        SFTPSource source = new SFTPSource();
+        source.open(config,null);
+
     }
 }

@@ -111,7 +111,7 @@ public class SFTPUtil {
     public void rename(String oldFilePath, String newFilePath) {
         try {
             sftp.rename(oldFilePath, newFilePath);
-            log.info("File:{} is rename to {} success" , oldFilePath,newFilePath);
+            log.info("File: '{}' is rename to '{}' success" , oldFilePath,newFilePath);
         } catch (SftpException e) {
             log.error("Rename file '" + oldFilePath + "' to '" + newFilePath + "' failed",e);
         }
@@ -126,7 +126,7 @@ public class SFTPUtil {
         try {
             File file = new File(uploadFile);
             sftp.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
-            log.info("File:{} is upload to {} success" , uploadFile,directory);
+            log.info("File: '{}' is upload to '{}' success" , uploadFile,directory);
         } catch (SftpException | IOException e) {
             log.error("Upload file '" + uploadFile +  "' to  remote directory '" + directory + "' failed",e);
         }
@@ -144,7 +144,7 @@ public class SFTPUtil {
             try {
                 InputStream is = sftp.get(directory + "/" + downloadFile);
                 byte[] fileData = IOUtils.toByteArray(is);
-                log.info("File:{}/{} is download success" ,directory, downloadFile);
+                log.info("File: '{}/{}' is download success" ,directory, downloadFile);
                 return fileData;
             } catch (SftpException | IOException e) {
                 log.error("Download file '" + downloadFile +  "' from  remote directory '" + directory + "' failed",e);

@@ -182,6 +182,8 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "' cannot be a subdirectory of input directory : '" + inputDirectory + "'");
         } else if(isLegalSuffix(movedDirectory)){
             throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "'  cannot end with '/'");
+        } else if (!isSftpDirExist(inputDirectory)) {
+            throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "'  does not exist in sftp server.");
         }
 
         if (StringUtils.isBlank(illegalFileDirectory)) {
@@ -192,6 +194,8 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory + "'  cannot end with '/'");
         } else if(Objects.equals(illegalFileDirectory,movedDirectory)){
             throw new IllegalArgumentException("moved directory and illegal file directory cannot be same : '" + movedDirectory +"'");
+        } else if (!isSftpDirExist(illegalFileDirectory)) {
+            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory + "'  does not exist in sftp server.");
         }
 
     }

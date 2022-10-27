@@ -52,7 +52,6 @@ public class SFTPConsumerThread extends Thread {
                 do {
                     added = inProcess.add(file);
                 } while (!added);
-
                 consumeFile(file);
             }
         } catch (InterruptedException e) {

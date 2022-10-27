@@ -45,7 +45,7 @@ public class SFTPUtilTest {
     public void uploadFileTest() {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
-        sftp.upload("/sftpdata/fujun/fujun","/Users/fujun/.DS_Store");
+        sftp.upload("/sftpdata/input/common_file","/Users/fujun/Downloads/fujun-key.pem");
         sftp.logout();
     }
 
