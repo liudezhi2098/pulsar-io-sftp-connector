@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.io.sftp.source.SFTPListingThread;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
 import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 import org.testng.annotations.Ignore;
 
 @Ignore
@@ -47,9 +48,11 @@ public class SFTPListingThreadTest {
         config.put("illegalFileDirectory", illegalFileDirectory);
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
+        SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(), 22);
+        sftp.login();
         BlockingQueue<SFTPSourceRecord> workQueue = new LinkedBlockingQueue<>();
         BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();
-        Thread t = new SFTPListingThread(sftpConfig, workQueue, inProcess);
+        Thread t = new SFTPListingThread(sftpConfig, sftp, workQueue, inProcess);
         t.start();
     }
 }

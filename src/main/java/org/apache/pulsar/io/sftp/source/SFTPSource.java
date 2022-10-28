@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
 import org.apache.pulsar.io.core.PushSource;
 import org.apache.pulsar.io.core.SourceContext;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
  * A simple connector to consume messages from the sftp server.
@@ -40,16 +41,17 @@ public class SFTPSource extends PushSource<byte[]> {
     private final BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();
     private final BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
     private ExecutorService executor;
-
+    private SFTPUtil sftp;
     @Override
     public void open(Map<String, Object> config, SourceContext sourceContext) throws Exception {
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
-
+        sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(), 22);
+        sftp.login();
         // One extra for the File listing thread, and another for the cleanup thread
         executor = Executors.newFixedThreadPool(sftpConfig.getNumWorkers() + 2);
-        executor.execute(new SFTPListingThread(sftpConfig, workQueue, inProcess));
-        executor.execute(new ProcessedSFTPThread(sftpConfig, recentlyProcessed));
+        executor.execute(new SFTPListingThread(sftpConfig, sftp, workQueue, inProcess));
+        executor.execute(new ProcessedSFTPThread(sftpConfig, sftp, recentlyProcessed));
 
         for (int idx = 0; idx < sftpConfig.getNumWorkers(); idx++) {
             executor.execute(new SFTPConsumerThread(this, workQueue, inProcess, recentlyProcessed));
@@ -58,6 +60,9 @@ public class SFTPSource extends PushSource<byte[]> {
 
     @Override
     public void close() {
+        if (sftp != null) {
+            sftp.logout();
+        }
         if (executor != null) {
             executor.shutdown();
             try {

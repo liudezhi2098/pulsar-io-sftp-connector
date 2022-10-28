@@ -29,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.io.sftp.source.ProcessedSFTPThread;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
 import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 import org.testng.annotations.Ignore;
 
 @Ignore
@@ -50,15 +51,17 @@ public class ProcessedSFTPThreadTest {
         config.put("keepFile", false);
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
-
+        SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(), 22);
+        sftp.login();
         BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
         for (int i = 0; i < 10; i++) {
             SFTPSourceRecord record =
-                    new SFTPSourceRecord("fujun" + i + ".txt", ("fujun" + i).getBytes(StandardCharsets.UTF_8), ".",
+                    new SFTPSourceRecord("fujun" + i + ".txt",
+                            ("fujun" + i).getBytes(StandardCharsets.UTF_8), ".", ".",
                             new Date().toString());
             recentlyProcessed.offer(record);
         }
-        Thread t = new ProcessedSFTPThread(sftpConfig, recentlyProcessed);
+        Thread t = new ProcessedSFTPThread(sftpConfig, sftp, recentlyProcessed);
         t.start();
     }
 }

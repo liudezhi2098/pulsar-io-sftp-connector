@@ -98,9 +98,9 @@ public class SFTPSourceConfig implements Serializable {
     private String fileFilter = "[^.].*";
 
     /**
-     * The maximum size (in bytes) that a file can be in order to be processed.
+     * The maximum size (in Bytes) that a file can be in order to be processed.
      */
-    private Double maximumSize = 8388608.0;
+    private Long maximumSize = 1048576L;
 
     /**
      * Indicates whether or not hidden files should be ignored or not.
@@ -148,7 +148,7 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Property password & privateKey cannot be both set.");
         }
 
-        if (maximumSize != null && Math.signum(maximumSize) < 0) {
+        if (maximumSize != null && maximumSize < 0) {
             throw new IllegalArgumentException("The property maximumSize must be non-negative");
         }
 

@@ -131,9 +131,9 @@ public class SFTPUtil {
     public void rename(String oldFilePath, String newFilePath) {
         try {
             sftp.rename(oldFilePath, newFilePath);
-            log.info("File: '{}' is rename to '{}' success", oldFilePath, newFilePath);
+            log.info("File: '{}' move to '{}' success", oldFilePath, newFilePath);
         } catch (SftpException e) {
-            log.error("Rename file '" + oldFilePath + "' to '" + newFilePath + "' failed", e);
+            log.error("Move file '" + oldFilePath + "' to '" + newFilePath + "' failed", e);
         }
     }
 
@@ -155,6 +155,27 @@ public class SFTPUtil {
     }
 
     /**
+     * get file size.
+     *
+     * @param directory
+     * @param downloadFile
+     * @return
+     */
+    public long getFileSize(String directory, String downloadFile) {
+        if (directory != null && !"".equals(directory)) {
+            try {
+                SftpATTRS sftpATTRS = sftp.lstat(directory + "/" + downloadFile);
+                long fileSize = sftpATTRS.getSize();
+                return fileSize;
+            } catch (SftpException e) {
+                log.error("get file '" + downloadFile + "' size from remote directory '" + directory + "' failed", e);
+            }
+        }
+        log.error("Directory is null or blank value, please check!");
+        return -1;
+    }
+
+    /**
      * download file.
      *
      * @param directory
@@ -166,6 +187,7 @@ public class SFTPUtil {
             try {
                 InputStream is = sftp.get(directory + "/" + downloadFile);
                 byte[] fileData = IOUtils.toByteArray(is);
+                is.close();
                 log.info("File: '{}/{}' is download success", directory, downloadFile);
                 return fileData;
             } catch (SftpException | IOException e) {

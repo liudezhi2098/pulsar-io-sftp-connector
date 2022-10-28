@@ -32,9 +32,12 @@ public class ProcessedSFTPThread extends Thread {
 
     private final BlockingQueue<SFTPSourceRecord> recentlyProcessed;
     private final SFTPSourceConfig fileConfig;
+    private final SFTPUtil sftp;
 
-    public ProcessedSFTPThread(SFTPSourceConfig fileConfig, BlockingQueue<SFTPSourceRecord> recentlyProcessed) {
+    public ProcessedSFTPThread(SFTPSourceConfig fileConfig, SFTPUtil sftp,
+                               BlockingQueue<SFTPSourceRecord> recentlyProcessed) {
         this.fileConfig = fileConfig;
+        this.sftp = sftp;
         this.recentlyProcessed = recentlyProcessed;
     }
 
@@ -42,11 +45,7 @@ public class ProcessedSFTPThread extends Thread {
         try {
             while (true) {
                 SFTPSourceRecord record = recentlyProcessed.take();
-                SFTPUtil sftp =
-                        new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
-                sftp.login();
                 handle(record, sftp);
-                sftp.logout();
             }
         } catch (InterruptedException e) {
             // just terminate
@@ -68,8 +67,8 @@ public class ProcessedSFTPThread extends Thread {
                 sftp.createDirIfNotExist(dirs, fileConfig.getMovedDirectory(), dirs.length, 0);
             }
             sftp.rename(oldFilePath + "/" + fileName, newFilePath + "/" + fileName);
-            log.info(String.format("Copied file %s from '%s' to '%s'", fileName, oldFilePath + "/" + fileName,
-                    newFilePath + "/" + fileName));
+            log.info(String.format("Copied file %s from '%s' to '%s'", fileName, oldFilePath + "/"
+                            + fileName, newFilePath + "/" + fileName));
         } else {
             String filePath = Objects.equals(".", absolutePath) ? fileConfig.getInputDirectory() + "/" + fileName :
                     fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;

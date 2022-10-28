@@ -28,7 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 
 /**
@@ -48,12 +50,13 @@ public class SFTPSourceRecord implements Record<byte[]> {
     private final byte[] value;
     private final HashMap<String, String> userProperties = new HashMap<String, String>();
 
-    public SFTPSourceRecord(String fileName, byte[] byt, String absolutePath, String modifiedTime)
-            throws NoSuchAlgorithmException, IOException {
+    public SFTPSourceRecord(String fileName, byte[] byt, String absolutePath, String realAbsolutePath,
+                            String modifiedTime) throws NoSuchAlgorithmException, IOException {
         this.key = Optional.of(fileName);
         this.value = byt;
         this.setProperty(FILE_NAME, fileName);
         this.setProperty(FILE_ABSOLUTE_PATH, absolutePath);
+        this.setProperty(Constants.FILE_ABSOLUTE_PATH, StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
         this.setProperty(FILE_MODIFIED_TIME, modifiedTime);
         this.setProperty(FILE_MD5, FileUtil.getFileMD5(byt));
     }
