@@ -42,27 +42,27 @@ public class SFTPSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * sftp server host
+     * sftp server host.
      */
     private String host;
 
     /**
-     * sftp server port
+     * sftp server port.
      */
     private int port = 22;
 
     /**
-     * sftp server login username
+     * sftp server login username.
      */
     private String username;
 
     /**
-     * sftp server login password
+     * sftp server login password.
      */
     private String password;
 
     /**
-     * sftp server login privateKey
+     * sftp server login privateKey.
      */
     private String privateKey;
 
@@ -72,12 +72,12 @@ public class SFTPSourceConfig implements Serializable {
     private String inputDirectory;
 
     /**
-     * The pulled files will be moved to this directory
+     * The pulled files will be moved to this directory.
      */
     private String movedDirectory;
 
     /**
-     * If the file size greater than "maximumSize" and the file is illegal will be moved to this directory
+     * If the file size greater than "maximumSize" and the file is illegal will be moved to this directory.
      */
     private String illegalFileDirectory;
 
@@ -88,7 +88,7 @@ public class SFTPSourceConfig implements Serializable {
 
     /**
      * If true, the file is not deleted after it has been processed and
-     * move to "movedDirectory"
+     * move to "movedDirectory".
      */
     private Boolean keepFile = Boolean.TRUE;
 
@@ -170,42 +170,51 @@ public class SFTPSourceConfig implements Serializable {
 
         if (StringUtils.isBlank(inputDirectory)) {
             throw new IllegalArgumentException("Required property inputDirectory not set.");
-        }  else if(isLegalSuffix(inputDirectory)){
-            throw new IllegalArgumentException("Specified input directory : '" + inputDirectory + "'  cannot end with '/'");
-        }  else if (!isSftpDirExist(inputDirectory)) {
-            throw new IllegalArgumentException("Specified input directory : '" + inputDirectory + "'  does not exist in sftp server.");
+        } else if (isLegalSuffix(inputDirectory)) {
+            throw new IllegalArgumentException(
+                    "Specified input directory : '" + inputDirectory + "'  cannot end with '/'");
+        } else if (!isSftpDirExist(inputDirectory)) {
+            throw new IllegalArgumentException(
+                    "Specified input directory : '" + inputDirectory + "'  does not exist in sftp server.");
         }
 
         if (StringUtils.isBlank(movedDirectory)) {
             throw new IllegalArgumentException("Required property movedDirectory not set.");
         } else if (movedDirectory.startsWith(inputDirectory)) {
-            throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "' cannot be a subdirectory of input directory : '" + inputDirectory + "'");
-        } else if(isLegalSuffix(movedDirectory)){
-            throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "'  cannot end with '/'");
+            throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory
+                    + "' cannot be a subdirectory of input directory : '" + inputDirectory + "'");
+        } else if (isLegalSuffix(movedDirectory)) {
+            throw new IllegalArgumentException(
+                    "Specified moved directory : '" + movedDirectory + "'  cannot end with '/'");
         } else if (!isSftpDirExist(inputDirectory)) {
-            throw new IllegalArgumentException("Specified moved directory : '" + movedDirectory + "'  does not exist in sftp server.");
+            throw new IllegalArgumentException(
+                    "Specified moved directory : '" + movedDirectory + "'  does not exist in sftp server.");
         }
 
         if (StringUtils.isBlank(illegalFileDirectory)) {
             throw new IllegalArgumentException("Required property illegalFileDirectory not set.");
         } else if (illegalFileDirectory.startsWith(inputDirectory)) {
-            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory + "' cannot be a subdirectory of input directory : '" + inputDirectory + "'");
-        } else if(isLegalSuffix(illegalFileDirectory)){
-            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory + "'  cannot end with '/'");
-        } else if(Objects.equals(illegalFileDirectory,movedDirectory)){
-            throw new IllegalArgumentException("moved directory and illegal file directory cannot be same : '" + movedDirectory +"'");
+            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory
+                    + "' cannot be a subdirectory of input directory : '" + inputDirectory + "'");
+        } else if (isLegalSuffix(illegalFileDirectory)) {
+            throw new IllegalArgumentException(
+                    "Specified illegal file directory : '" + illegalFileDirectory + "'  cannot end with '/'");
+        } else if (Objects.equals(illegalFileDirectory, movedDirectory)) {
+            throw new IllegalArgumentException(
+                    "moved directory and illegal file directory cannot be same : '" + movedDirectory + "'");
         } else if (!isSftpDirExist(illegalFileDirectory)) {
-            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory + "'  does not exist in sftp server.");
+            throw new IllegalArgumentException("Specified illegal file directory : '" + illegalFileDirectory
+                    + "'  does not exist in sftp server.");
         }
 
     }
 
-    private Boolean isSftpDirExist(String directory){
+    private Boolean isSftpDirExist(String directory) {
         SFTPUtil sftp;
-        if(StringUtils.isNotBlank(password)){
+        if (StringUtils.isNotBlank(password)) {
             sftp = new SFTPUtil(username, password, host, port);
         } else {
-            sftp = new SFTPUtil(username, host, port,privateKey);
+            sftp = new SFTPUtil(username, host, port, privateKey);
         }
         sftp.login();
         Boolean exist = sftp.isDirExist(directory);
@@ -213,8 +222,8 @@ public class SFTPSourceConfig implements Serializable {
         return exist;
     }
 
-    private Boolean isLegalSuffix(String directory){
-        if(!"/".equals(directory)){
+    private Boolean isLegalSuffix(String directory) {
+        if (!"/".equals(directory)) {
             return directory.endsWith("/");
         }
         return false;

@@ -18,10 +18,10 @@
  */
 package org.apache.pulsar.io.sftp.source;
 
-import static org.apache.pulsar.io.sftp.utils.Constants.*;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
@@ -41,35 +41,40 @@ public class ProcessedSFTPThread extends Thread {
     public void run() {
         try {
             while (true) {
-                SFTPUtil sftp = new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
+                SFTPUtil sftp =
+                        new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
                 sftp.login();
                 SFTPSourceRecord record = recentlyProcessed.take();
-                handle(record,sftp);
+                handle(record, sftp);
                 sftp.logout();
             }
         } catch (InterruptedException e) {
             // just terminate
-            log.error("Interrupted on take record from recentlyProcessed queue",e);
+            log.error("Interrupted on take record from recentlyProcessed queue", e);
         }
     }
 
-    private void handle(SFTPSourceRecord record,SFTPUtil sftp) {
-        String absolutePath = record.getProperties().get(FILE_ABSOLUTE_PATH);
-        String fileName = record.getProperties().get(FILE_NAME);
+    private void handle(SFTPSourceRecord record, SFTPUtil sftp) {
+        String absolutePath = record.getProperties().get(Constants.FILE_ABSOLUTE_PATH);
+        String fileName = record.getProperties().get(Constants.FILE_NAME);
         if (fileConfig.getKeepFile()) {
-            String oldFilePath = Objects.equals(".",absolutePath) ? fileConfig.getInputDirectory() : fileConfig.getInputDirectory() + "/" + absolutePath;
-            String newFilePath = Objects.equals(".",absolutePath) ? fileConfig.getMovedDirectory() : fileConfig.getMovedDirectory() + "/" + absolutePath;
+            String oldFilePath = Objects.equals(".", absolutePath) ? fileConfig.getInputDirectory() :
+                    fileConfig.getInputDirectory() + "/" + absolutePath;
+            String newFilePath = Objects.equals(".", absolutePath) ? fileConfig.getMovedDirectory() :
+                    fileConfig.getMovedDirectory() + "/" + absolutePath;
             //if `movedDirectory` not existed, create it
-            if(!sftp.isDirExist(newFilePath)){
+            if (!sftp.isDirExist(newFilePath)) {
                 String[] dirs = ("/" + absolutePath).split("/");
-                sftp.createDirIfNotExist(dirs,fileConfig.getMovedDirectory(),dirs.length,0);
+                sftp.createDirIfNotExist(dirs, fileConfig.getMovedDirectory(), dirs.length, 0);
             }
-            sftp.rename(oldFilePath + "/" + fileName,newFilePath + "/" + fileName);
-            log.info(String.format("Copied file %s from '%s' to '%s'",fileName,oldFilePath + "/" + fileName,newFilePath + "/" + fileName));
+            sftp.rename(oldFilePath + "/" + fileName, newFilePath + "/" + fileName);
+            log.info(String.format("Copied file %s from '%s' to '%s'", fileName, oldFilePath + "/" + fileName,
+                    newFilePath + "/" + fileName));
         } else {
-            String filePath = Objects.equals(".",absolutePath) ? fileConfig.getInputDirectory() + "/" + fileName : fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
+            String filePath = Objects.equals(".", absolutePath) ? fileConfig.getInputDirectory() + "/" + fileName :
+                    fileConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
             sftp.deleteFile(filePath);
-            log.info(String.format("Deleted file %s on '%s'",fileName,filePath));
+            log.info(String.format("Deleted file %s on '%s'", fileName, filePath));
         }
     }
 }

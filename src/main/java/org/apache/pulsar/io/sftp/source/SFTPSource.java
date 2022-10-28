@@ -36,10 +36,10 @@ import org.apache.pulsar.io.core.SourceContext;
 @NoArgsConstructor
 public class SFTPSource extends PushSource<byte[]> {
 
-    private ExecutorService executor;
     private final BlockingQueue<SFTPSourceRecord> workQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();
     private final BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
+    private ExecutorService executor;
 
     @Override
     public void open(Map<String, Object> config, SourceContext sourceContext) throws Exception {

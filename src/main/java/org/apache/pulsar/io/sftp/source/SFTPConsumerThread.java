@@ -56,21 +56,21 @@ public class SFTPConsumerThread extends Thread {
             }
         } catch (InterruptedException e) {
             // just terminate
-            log.error("Take record from  workQueue be interrupted in SFTPConsumerThread",e);
+            log.error("Take record from  workQueue be interrupted in SFTPConsumerThread", e);
         }
     }
 
     private void consumeFile(SFTPSourceRecord file) {
-            source.consume(file);
-            boolean removed = false;
-            do {
-                removed = inProcess.remove(file);
-            } while (!removed);
+        source.consume(file);
+        boolean removed = false;
+        do {
+            removed = inProcess.remove(file);
+        } while (!removed);
 
-            boolean added = false;
-            do {
-                added = recentlyProcessed.add(file);
-            } while (!added);
+        boolean added = false;
+        do {
+            added = recentlyProcessed.add(file);
+        } while (!added);
     }
 
 

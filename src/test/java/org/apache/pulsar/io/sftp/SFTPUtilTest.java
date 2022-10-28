@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.pulsar.io.sftp;
 
 import com.jcraft.jsch.ChannelSftp;
@@ -10,7 +28,7 @@ import java.util.List;
 import java.util.Vector;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
-import org.junit.Ignore;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 @Ignore
@@ -20,14 +38,14 @@ public class SFTPUtilTest {
     String password = "12345678";
     String host = "20.120.20.201";
 
+
     @Test
     public void listFilesTest() {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
         Vector<ChannelSftp.LsEntry> fileList = sftp.listFiles("/sftpdata/fujun/fujun");
         Iterator<ChannelSftp.LsEntry> it = fileList.iterator();
-        while (it.hasNext())
-        {
+        while (it.hasNext()) {
             ChannelSftp.LsEntry lsEntry = it.next();
             String fileName = lsEntry.getFilename();
 
@@ -45,7 +63,7 @@ public class SFTPUtilTest {
     public void uploadFileTest() {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
-        sftp.upload("/sftpdata/input/common_file","/Users/fujun/Downloads/fujun-key.pem");
+        sftp.upload("/sftpdata/input/common_file", "/Users/fujun/Downloads/fujun-key.pem");
         sftp.logout();
     }
 
@@ -53,7 +71,7 @@ public class SFTPUtilTest {
     public void renameFileTest() {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
-        sftp.rename("/sftpdata/values-2.10.1.8.yaml","/sftpdata/fujun/values-2.10.1.8.yaml");
+        sftp.rename("/sftpdata/values-2.10.1.8.yaml", "/sftpdata/fujun/values-2.10.1.8.yaml");
         sftp.logout();
     }
 
@@ -82,7 +100,7 @@ public class SFTPUtilTest {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
         List<byte[]> fileList = new LinkedList<>();
-        sftp.recursiveDownloadFile("/sftpdata",fileList,false);
+        sftp.recursiveDownloadFile("/sftpdata", fileList, false);
         System.out.println(fileList.size());
         sftp.logout();
     }
@@ -103,7 +121,7 @@ public class SFTPUtilTest {
         String tempPath = "/sftpdata/fujun";
         String path = "/aa/bb";
         System.out.println(path.split("/").length);
-        sftp.createDirIfNotExist(path.split("/"),tempPath,path.split("/").length,0);
+        sftp.createDirIfNotExist(path.split("/"), tempPath, path.split("/").length, 0);
         sftp.logout();
     }
 

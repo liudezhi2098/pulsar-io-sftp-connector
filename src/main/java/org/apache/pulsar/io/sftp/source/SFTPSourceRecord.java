@@ -18,7 +18,10 @@
  */
 package org.apache.pulsar.io.sftp.source;
 
-import static org.apache.pulsar.io.sftp.utils.Constants.*;
+import static org.apache.pulsar.io.sftp.utils.Constants.FILE_ABSOLUTE_PATH;
+import static org.apache.pulsar.io.sftp.utils.Constants.FILE_MD5;
+import static org.apache.pulsar.io.sftp.utils.Constants.FILE_MODIFIED_TIME;
+import static org.apache.pulsar.io.sftp.utils.Constants.FILE_NAME;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -43,9 +46,10 @@ public class SFTPSourceRecord implements Record<byte[]> {
 
     private final Optional<String> key;
     private final byte[] value;
-    private final HashMap<String, String> userProperties = new HashMap<String, String> ();
+    private final HashMap<String, String> userProperties = new HashMap<String, String>();
 
-    public SFTPSourceRecord(String fileName,byte[] byt,String absolutePath,String modifiedTime) throws NoSuchAlgorithmException, IOException {
+    public SFTPSourceRecord(String fileName, byte[] byt, String absolutePath, String modifiedTime)
+            throws NoSuchAlgorithmException, IOException {
         this.key = Optional.of(fileName);
         this.value = byt;
         this.setProperty(FILE_NAME, fileName);

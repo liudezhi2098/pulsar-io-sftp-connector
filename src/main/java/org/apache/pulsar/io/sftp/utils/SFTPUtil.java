@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.pulsar.io.sftp.utils;
 
 import com.jcraft.jsch.Channel;
@@ -46,9 +64,9 @@ public class SFTPUtil {
 
 
     /**
-     * login server
+     * login server.
      */
-    public void login(){
+    public void login() {
         try {
             JSch jsch = new JSch();
             if (privateKey != null) {
@@ -67,14 +85,14 @@ public class SFTPUtil {
             sftp = (ChannelSftp) channel;
 
         } catch (JSchException e) {
-            log.error("Failed to login the sftp server ",e);
+            log.error("Failed to login the sftp server ", e);
         }
     }
 
     /**
-     * close server
+     * close server.
      */
-    public void logout(){
+    public void logout() {
         if (sftp != null) {
             if (sftp.isConnected()) {
                 sftp.disconnect();
@@ -88,7 +106,8 @@ public class SFTPUtil {
     }
 
     /**
-     * List all files in sourcePath
+     * List all files in sourcePath.
+     *
      * @param directory
      * @return
      * @throws SftpException
@@ -97,13 +116,14 @@ public class SFTPUtil {
         try {
             return sftp.ls(directory);
         } catch (SftpException e) {
-            log.error("List files in directory : " + directory + " failed",e);
+            log.error("List files in directory : " + directory + " failed", e);
         }
         return new Vector<>();
     }
 
     /**
-     * rename a file , can be used for remove operation
+     * rename a file , can be used for remove operation.
+     *
      * @param oldFilePath
      * @param newFilePath
      * @throws Exception
@@ -111,14 +131,15 @@ public class SFTPUtil {
     public void rename(String oldFilePath, String newFilePath) {
         try {
             sftp.rename(oldFilePath, newFilePath);
-            log.info("File: '{}' is rename to '{}' success" , oldFilePath,newFilePath);
+            log.info("File: '{}' is rename to '{}' success", oldFilePath, newFilePath);
         } catch (SftpException e) {
-            log.error("Rename file '" + oldFilePath + "' to '" + newFilePath + "' failed",e);
+            log.error("Rename file '" + oldFilePath + "' to '" + newFilePath + "' failed", e);
         }
     }
 
     /**
-     * upload file
+     * upload file.
+     *
      * @param directory
      * @param uploadFile
      */
@@ -126,15 +147,16 @@ public class SFTPUtil {
         try {
             File file = new File(uploadFile);
             sftp.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
-            log.info("File: '{}' is upload to '{}' success" , uploadFile,directory);
+            log.info("File: '{}' is upload to '{}' success", uploadFile, directory);
         } catch (SftpException | IOException e) {
-            log.error("Upload file '" + uploadFile +  "' to  remote directory '" + directory + "' failed",e);
+            log.error("Upload file '" + uploadFile + "' to  remote directory '" + directory + "' failed", e);
         }
 
     }
 
     /**
-     * download file
+     * download file.
+     *
      * @param directory
      * @param downloadFile
      * @return
@@ -144,10 +166,10 @@ public class SFTPUtil {
             try {
                 InputStream is = sftp.get(directory + "/" + downloadFile);
                 byte[] fileData = IOUtils.toByteArray(is);
-                log.info("File: '{}/{}' is download success" ,directory, downloadFile);
+                log.info("File: '{}/{}' is download success", directory, downloadFile);
                 return fileData;
             } catch (SftpException | IOException e) {
-                log.error("Download file '" + downloadFile +  "' from  remote directory '" + directory + "' failed",e);
+                log.error("Download file '" + downloadFile + "' from  remote directory '" + directory + "' failed", e);
             }
         }
         log.error("Directory is null or blank value,please check!");
@@ -155,25 +177,27 @@ public class SFTPUtil {
     }
 
     /**
-     * batch files download
+     * batch files download.
+     *
      * @param directory
      * @param fileList
      */
-    public void recursiveDownloadFile(String directory,List<byte[]> fileList,Boolean isRecursive) {
+    public void recursiveDownloadFile(String directory, List<byte[]> fileList, Boolean isRecursive) {
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
-                fileList.add(download(directory,item.getFilename()));
+                fileList.add(download(directory, item.getFilename()));
             } else if (!(".".equals(item.getFilename()) || "..".equals(item.getFilename()))) {
-                if(isRecursive){
-                    recursiveDownloadFile(directory + "/" + item.getFilename(),fileList, true);
+                if (isRecursive) {
+                    recursiveDownloadFile(directory + "/" + item.getFilename(), fileList, true);
                 }
             }
         }
     }
 
     /**
-     * directory weather exist
+     * directory weather exist.
+     *
      * @param directory
      * @return
      */
@@ -192,19 +216,21 @@ public class SFTPUtil {
     }
 
     /**
-     * create directory
+     * create directory.
+     *
      * @param directory
      */
     public void createDir(String directory) {
         try {
             sftp.mkdir(directory);
         } catch (SftpException e) {
-            log.error("Create directory '" + directory +  "' failed",e);
+            log.error("Create directory '" + directory + "' failed", e);
         }
     }
 
     /**
-     * create multi-level directory
+     * create multi-level directory.
+     *
      * @param dirs
      * @param tempPath
      * @param length
@@ -227,7 +253,7 @@ public class SFTPUtil {
                 sftp.mkdir(tempPath);
                 sftp.cd(tempPath);
             } catch (SftpException e) {
-                log.error("create directory [" + tempPath + "] failed",e);
+                log.error("create directory [" + tempPath + "] failed", e);
             }
             log.info("cd directory [" + tempPath + "]");
             createDirIfNotExist(dirs, tempPath, length, index);
@@ -235,33 +261,36 @@ public class SFTPUtil {
     }
 
     /**
-     * remove directory
+     * remove directory.
+     *
      * @param directory
      */
     public void removeDir(String directory) {
         try {
             sftp.rmdir(directory);
         } catch (SftpException e) {
-            log.error("Remove directory '" + directory +  "' failed",e);
+            log.error("Remove directory '" + directory + "' failed", e);
         }
     }
 
     /**
-     * delete file
+     * delete file.
+     *
      * @param deleteFilePath
      */
     public void deleteFile(String deleteFilePath) {
         try {
             sftp.rm(deleteFilePath);
-            log.info("File:{} is delete success" , deleteFilePath);
+            log.info("File:{} is delete success", deleteFilePath);
         } catch (SftpException e) {
-            log.error("Delete file : " + deleteFilePath +  " failed",e);
+            log.error("Delete file : " + deleteFilePath + " failed", e);
         }
     }
 
 
     /**
-     * recursive delete file
+     * recursive delete file.
+     *
      * @param directory
      */
     public void recursiveDeleteFile(String directory) {

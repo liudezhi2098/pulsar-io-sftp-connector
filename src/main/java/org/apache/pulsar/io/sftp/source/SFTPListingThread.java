@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.io.sftp.source;
 
-import static org.apache.pulsar.io.sftp.utils.Constants.*;
 import com.jcraft.jsch.ChannelSftp;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -33,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
@@ -49,6 +49,7 @@ public class SFTPListingThread extends Thread {
     private final BlockingQueue<SFTPSourceRecord> inProcess;
 
     private final SFTPSourceConfig fileConfig;
+
     public SFTPListingThread(SFTPSourceConfig fileConfig,
                              BlockingQueue<SFTPSourceRecord> workQueue,
                              BlockingQueue<SFTPSourceRecord> inProcess) {
@@ -69,37 +70,41 @@ public class SFTPListingThread extends Thread {
                     String inputDir = fileConfig.getInputDirectory();
                     String illegalFileDir = fileConfig.getIllegalFileDirectory();
                     boolean recurse = fileConfig.getRecurse();
-                    Double maximumSize =  fileConfig.getMaximumSize();
+                    Double maximumSize = fileConfig.getMaximumSize();
 
                     Set<SFTPSourceRecord> listing = new HashSet<>();
                     try {
-                        performListing(inputDir,sftp,listing,recurse);
+                        performListing(inputDir, sftp, listing, recurse);
                     } catch (NoSuchAlgorithmException | IOException e) {
-                        throw new IllegalStateException("Cannot read all files from directory: " + inputDir + " , current listing : " + listing);
+                        throw new IllegalStateException(
+                                "Cannot read all files from directory: " + inputDir + " , current listing : "
+                                        + listing);
                     }
                     if (!listing.isEmpty()) {
                         // remove any files that have been or are currently being processed.
                         listing.removeAll(inProcess);
 
-                        for (SFTPSourceRecord record: listing) {
-                            String absolutePath = record.getProperties().get(FILE_ABSOLUTE_PATH);
-                            String realAbsolutePath = absolutePath.replaceFirst(inputDir,"").replaceFirst("/","");
-                            String fileName = record.getProperties().get(FILE_NAME);
+                        for (SFTPSourceRecord record : listing) {
+                            String absolutePath = record.getProperties().get(Constants.FILE_ABSOLUTE_PATH);
+                            String realAbsolutePath = absolutePath.replaceFirst(inputDir, "").replaceFirst("/", "");
+                            String fileName = record.getProperties().get(Constants.FILE_NAME);
                             if (!workQueue.contains(record)) {
                                 //file size > `maximumSize` (default 1M) , move file to `illegalFileDirectory`
-                                if(record.getValue().length * 8 > maximumSize){
+                                if (record.getValue().length * 8 > maximumSize) {
                                     String oldFilePath = inputDir + "/" + realAbsolutePath;
                                     String illegalFilePath = illegalFileDir + "/" + realAbsolutePath;
                                     //`illegalFileDir` not existed, create it first
-                                    if(!sftp.isDirExist(illegalFilePath)){
+                                    if (!sftp.isDirExist(illegalFilePath)) {
                                         String[] dirs = ("/" + realAbsolutePath).split("/");
-                                        sftp.createDirIfNotExist(dirs,illegalFileDir,dirs.length,0);
+                                        sftp.createDirIfNotExist(dirs, illegalFileDir, dirs.length, 0);
                                     }
-                                    log.info("File size  >  maximumSize, will be moved to illegal file path : '" + illegalFilePath + "'");
-                                    sftp.rename(oldFilePath + "/" + fileName,illegalFilePath + "/" + fileName);
+                                    log.info("File size  >  maximumSize, will be moved to illegal file path : '"
+                                            + illegalFilePath + "'");
+                                    sftp.rename(oldFilePath + "/" + fileName, illegalFilePath + "/" + fileName);
 
                                 } else {
-                                    record.getProperties().put(FILE_ABSOLUTE_PATH,StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
+                                    record.getProperties().put(Constants.FILE_ABSOLUTE_PATH,
+                                            StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
                                     workQueue.offer(record);
                                     log.info("Add File to work queue : " + record);
                                 }
@@ -116,12 +121,13 @@ public class SFTPListingThread extends Thread {
                 sleep(pollingInterval - 1);
             } catch (InterruptedException e) {
                 // Just ignore
-                log.error("Sleeping be interrupted in SFTPListingThread",e);
+                log.error("Sleeping be interrupted in SFTPListingThread", e);
             }
         }
     }
 
-    private void performListing(final String directory,SFTPUtil sftp,Set<SFTPSourceRecord> listing,Boolean isRecursive)
+    private void performListing(final String directory, SFTPUtil sftp, Set<SFTPSourceRecord> listing,
+                                Boolean isRecursive)
             throws NoSuchAlgorithmException, IOException {
         boolean ignoreHiddenFiles = fileConfig.getIgnoreHiddenFiles();
         String fileFilter = fileConfig.getFileFilter();
@@ -132,22 +138,24 @@ public class SFTPListingThread extends Thread {
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
                 String fileName = item.getFilename();
-                if((Optional.of(ignoreHiddenFiles).orElse(true) && fileName.startsWith("."))
-                        || !filePattern.matcher(fileName).matches()){
+                if ((Optional.of(ignoreHiddenFiles).orElse(true) && fileName.startsWith("."))
+                        || !filePattern.matcher(fileName).matches()) {
                     //whether ignore hidden file which start with `.` & Filter files that match the  `fileFilter`
                     log.warn("Ignore hidden file or filter file : " + fileName);
                 } else {
-                    byte[] file =  sftp.download(directory,item.getFilename());
-                    if(file == null){
-                        log.error("May download file '" + fileName + "'  from '" + directory + "' failed , please check and download next file");
+                    byte[] file = sftp.download(directory, item.getFilename());
+                    if (file == null) {
+                        log.error("May download file '" + fileName + "'  from '" + directory
+                                + "' failed , please check and download next file");
                         return;
                     }
-                    SFTPSourceRecord record = new SFTPSourceRecord(fileName,file,directory,item.getAttrs().getAtimeString());
+                    SFTPSourceRecord record =
+                            new SFTPSourceRecord(fileName, file, directory, item.getAttrs().getAtimeString());
                     listing.add(record);
                 }
             } else if (!(".".equals(item.getFilename()) || "..".equals(item.getFilename()))) {
-                if(isRecursive){
-                    performListing(directory + "/" + item.getFilename(),sftp,listing, true);
+                if (isRecursive) {
+                    performListing(directory + "/" + item.getFilename(), sftp, listing, true);
                 }
             }
         }
