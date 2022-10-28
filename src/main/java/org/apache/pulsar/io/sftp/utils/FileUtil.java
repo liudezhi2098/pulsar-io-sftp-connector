@@ -18,9 +18,11 @@
  */
 package org.apache.pulsar.io.sftp.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,12 +32,24 @@ public class FileUtil {
         if (!file.isFile()) {
             return null;
         }
-        MessageDigest digest = null;
-        FileInputStream in = null;
-        byte buffer[] = new byte[1024];
+        byte[] buffer = new byte[1024];
         int len;
-        digest = MessageDigest.getInstance("MD5");
-        in = new FileInputStream(file);
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        FileInputStream in = new FileInputStream(file);
+        while ((len = in.read(buffer, 0, 1024)) != -1) {
+            digest.update(buffer, 0, len);
+        }
+        in.close();
+        BigInteger bigInt = new BigInteger(1, digest.digest());
+        return bigInt.toString(16);
+    }
+
+    public static String getFileMD5(byte[] byt) throws NoSuchAlgorithmException, IOException {
+
+        byte[] buffer = new byte[1024];
+        int len;
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        InputStream in = new ByteArrayInputStream(byt);
         while ((len = in.read(buffer, 0, 1024)) != -1) {
             digest.update(buffer, 0, len);
         }
