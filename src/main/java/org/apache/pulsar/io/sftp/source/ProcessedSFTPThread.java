@@ -41,10 +41,10 @@ public class ProcessedSFTPThread extends Thread {
     public void run() {
         try {
             while (true) {
+                SFTPSourceRecord record = recentlyProcessed.take();
                 SFTPUtil sftp =
                         new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
                 sftp.login();
-                SFTPSourceRecord record = recentlyProcessed.take();
                 handle(record, sftp);
                 sftp.logout();
             }

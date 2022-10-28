@@ -143,15 +143,20 @@ public class SFTPListingThread extends Thread {
                     //whether ignore hidden file which start with `.` & Filter files that match the  `fileFilter`
                     log.warn("Ignore hidden file or filter file : " + fileName);
                 } else {
-                    byte[] file = sftp.download(directory, item.getFilename());
+                    SFTPUtil downloadSftp =
+                            new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
+                    downloadSftp.login();
+                    byte[] file = downloadSftp.download(directory, item.getFilename());
                     if (file == null) {
                         log.error("May download file '" + fileName + "'  from '" + directory
                                 + "' failed , please check and download next file");
                         return;
                     }
+                    downloadSftp.logout();
                     SFTPSourceRecord record =
                             new SFTPSourceRecord(fileName, file, directory, item.getAttrs().getAtimeString());
                     listing.add(record);
+
                 }
             } else if (!(".".equals(item.getFilename()) || "..".equals(item.getFilename()))) {
                 if (isRecursive) {
