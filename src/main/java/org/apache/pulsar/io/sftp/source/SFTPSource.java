@@ -20,14 +20,11 @@ package org.apache.pulsar.io.sftp.source;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
 import org.apache.pulsar.io.core.PushSource;
 import org.apache.pulsar.io.core.SourceContext;
-import org.apache.pulsar.io.sftp.utils.SFTPUtil;
+import org.apache.pulsar.io.sftp.common.TaskExecutors;
 
 /**
  * A simple connector to consume messages from the sftp server.
@@ -37,41 +34,55 @@ import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 @NoArgsConstructor
 public class SFTPSource extends PushSource<byte[]> {
 
-    private final BlockingQueue<SFTPSourceRecord> workQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();
-    private final BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
-    private ExecutorService executor;
-    private SFTPUtil sftp;
+    private final BlockingQueue<SFTPFileInfo> workQueue = new LinkedBlockingQueue<>(10000);
+    private final BlockingQueue<SFTPFileInfo> inProcess = new LinkedBlockingQueue<>();
+    private final BlockingQueue<SFTPFileInfo> recentlyProcessed = new LinkedBlockingQueue<>();
+    private TaskExecutors executor;
+    private SFTPSourceConfig sftpConfig = null;
+
     @Override
     public void open(Map<String, Object> config, SourceContext sourceContext) throws Exception {
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
-        sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(), 22);
-        sftp.login();
+        this.sftpConfig = sftpConfig;
+
         // One extra for the File listing thread, and another for the cleanup thread
-        executor = Executors.newFixedThreadPool(sftpConfig.getNumWorkers() + 2);
-        executor.execute(new SFTPListingThread(sftpConfig, sftp, workQueue, inProcess));
-        executor.execute(new ProcessedSFTPThread(sftpConfig, sftp, recentlyProcessed));
+        executor = new TaskExecutors(sftpConfig.getNumWorkers()
+                + sftpConfig.getNumWorkers() / 2 + 2);
+        executor.execute(new SFTPListingThread(this));
+
+        for (int idx = 0; idx < sftpConfig.getNumWorkers() / 2 + 1; idx++) {
+            executor.execute(new SFTPProcessedThread(this));
+        }
 
         for (int idx = 0; idx < sftpConfig.getNumWorkers(); idx++) {
-            executor.execute(new SFTPConsumerThread(this, workQueue, inProcess, recentlyProcessed));
+            executor.execute(new SFTPConsumerThread(this));
         }
     }
 
     @Override
     public void close() {
-        if (sftp != null) {
-            sftp.logout();
-        }
         if (executor != null) {
             executor.shutdown();
-            try {
-                if (!executor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-            }
         }
+    }
+
+    public BlockingQueue<SFTPFileInfo> getWorkQueue() {
+        return this.workQueue;
+    }
+
+    public BlockingQueue<SFTPFileInfo> getInProcess() {
+        return this.inProcess;
+    }
+
+    public BlockingQueue<SFTPFileInfo> getRecentlyProcessed() {
+        return this.recentlyProcessed;
+    }
+
+    public SFTPSourceConfig getSFTPSourceConfig() {
+        return this.sftpConfig;
+    }
+    public void setSFTPSourceConfig(SFTPSourceConfig sftpConfig) {
+        this.sftpConfig = sftpConfig;
     }
 }

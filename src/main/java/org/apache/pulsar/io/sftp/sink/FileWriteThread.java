@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.sftp.source.FileSourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +31,10 @@ import org.slf4j.LoggerFactory;
  * and publishes them to a Pulsar topic.
  */
 public class FileWriteThread extends Thread {
+    public static final String FILE_NAME = "file.name";
+    public static final String FILE_MD5 = "file.md5";
+    public static final String FILE_ABSOLUTE_PATH = "file.path";
+    public static final String FILE_MODIFIED_TIME = "file.modified.time";
 
     private static final Logger log = LoggerFactory.getLogger(FileWriteThread.class);
     private final FileSink sink;
@@ -62,9 +65,9 @@ public class FileWriteThread extends Thread {
         try {
             Message<byte[]> msg = record.getMessage().get();
             byte[] contents = msg.getValue();
-            String name = new File(msg.getProperty(FileSourceRecord.FILE_NAME)).getName();
+            String name = new File(msg.getProperty(FILE_NAME)).getName();
             String fileName = sink.getFileSinkConfig().getOutDirectory() + "/" + name;
-            String md5 = msg.getProperty(FileSourceRecord.FILE_MD5);
+            String md5 = msg.getProperty(FILE_MD5);
             File writeFile = new File(fileName);
             if (writeFile.exists()) {
                 writeFile.delete();

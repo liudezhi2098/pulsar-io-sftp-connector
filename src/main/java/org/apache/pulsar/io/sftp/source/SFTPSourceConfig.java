@@ -30,7 +30,6 @@ import java.util.regex.PatternSyntaxException;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
  * Configuration class for the SFTP Source Connector.
@@ -101,6 +100,11 @@ public class SFTPSourceConfig implements Serializable {
      * The maximum size (in Bytes) that a file can be in order to be processed.
      */
     private Long maximumSize = 1048576L;
+
+    /**
+     * The maxi num  file  that a sftp listing can be in order to be processed.
+     */
+    private int maxFileNumOneListing = 100;
 
     /**
      * Indicates whether or not hidden files should be ignored or not.
@@ -210,16 +214,17 @@ public class SFTPSourceConfig implements Serializable {
     }
 
     private Boolean isSftpDirExist(String directory) {
-        SFTPUtil sftp;
-        if (StringUtils.isNotBlank(password)) {
-            sftp = new SFTPUtil(username, password, host, port);
-        } else {
-            sftp = new SFTPUtil(username, host, port, privateKey);
-        }
-        sftp.login();
-        Boolean exist = sftp.isDirExist(directory);
-        sftp.logout();
-        return exist;
+//        SFTPUtil sftp;
+//        if (StringUtils.isNotBlank(password)) {
+//            sftp = new SFTPUtil(username, password, host, port);
+//        } else {
+//            sftp = new SFTPUtil(username, host, port, privateKey);
+//        }
+//        sftp.login();
+//        Boolean exist = sftp.isDirExist(directory);
+//        sftp.logout();
+//        return exist;
+        return true;
     }
 
     private Boolean isLegalSuffix(String directory) {

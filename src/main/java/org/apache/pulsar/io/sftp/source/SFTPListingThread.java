@@ -31,7 +31,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pulsar.io.sftp.utils.Constants;
+import org.apache.pulsar.io.sftp.common.SFTPTaskState;
+import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
@@ -40,40 +41,50 @@ import org.apache.pulsar.io.sftp.utils.SFTPUtil;
  * them to a work queue for processing by the SFTPConsumerThreads.
  */
 @Slf4j
-public class SFTPListingThread extends Thread {
+public class SFTPListingThread extends TaskThread {
 
     private final AtomicLong queueLastUpdated = new AtomicLong(0L);
     private final Lock listingLock = new ReentrantLock();
-    private final BlockingQueue<SFTPSourceRecord> workQueue;
-    private final BlockingQueue<SFTPSourceRecord> inProcess;
     private final SFTPUtil sftp;
-    private final SFTPSourceConfig fileConfig;
+    private boolean stop = false;
+    private final SFTPSourceConfig sftpConfig;
+    private final BlockingQueue<SFTPFileInfo> workQueue;
+    private final BlockingQueue<SFTPFileInfo> inProcess;
+    private final BlockingQueue<SFTPFileInfo> recentlyProcessed;
 
-    public SFTPListingThread(SFTPSourceConfig fileConfig,
-                             SFTPUtil sftp,
-                             BlockingQueue<SFTPSourceRecord> workQueue,
-                             BlockingQueue<SFTPSourceRecord> inProcess) {
+    public SFTPListingThread(SFTPSource sftpSource) {
+        this(sftpSource.getSFTPSourceConfig(), sftpSource.getWorkQueue(), sftpSource.getInProcess(),
+                sftpSource.getRecentlyProcessed()
+        );
+    }
+
+    public SFTPListingThread(SFTPSourceConfig sftpConfig,
+                             BlockingQueue<SFTPFileInfo> workQueue,
+                             BlockingQueue<SFTPFileInfo> inProcess,
+                             BlockingQueue<SFTPFileInfo> recentlyProcessed) {
         this.workQueue = workQueue;
         this.inProcess = inProcess;
+        this.recentlyProcessed = recentlyProcessed;
+        this.sftpConfig = sftpConfig;
+        SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(),
+                sftpConfig.getPort());
+        sftp.login();
         this.sftp = sftp;
-        this.fileConfig = fileConfig;
     }
 
     public void run() {
-        long pollingInterval = Optional.ofNullable(fileConfig.getPollingInterval()).orElse(10000L);
+        long pollingInterval = Optional.ofNullable(sftpConfig.getPollingInterval()).orElse(10000L);
 
-        while (true) {
-            SFTPUtil sftp = new SFTPUtil(fileConfig.getUsername(), fileConfig.getPassword(), fileConfig.getHost(), 22);
-            sftp.login();
+        while (!stop) {
             if ((queueLastUpdated.get() < System.currentTimeMillis() - pollingInterval) && listingLock.tryLock()) {
                 try {
-                    String inputDir = fileConfig.getInputDirectory();
-                    String illegalFileDir = fileConfig.getIllegalFileDirectory();
-                    boolean recurse = fileConfig.getRecurse();
+                    String inputDir = sftpConfig.getInputDirectory();
+                    String illegalFileDir = sftpConfig.getIllegalFileDirectory();
+                    boolean recurse = sftpConfig.getRecurse();
 
-                    Set<SFTPSourceRecord> listing = new HashSet<>();
+                    Set<SFTPFileInfo> listing = new HashSet<>();
                     try {
-                        performListing(inputDir, inputDir, illegalFileDir, sftp, listing, recurse);
+                        performListing(inputDir, inputDir, illegalFileDir, listing, recurse);
                     } catch (NoSuchAlgorithmException | IOException e) {
                         throw new IllegalStateException(
                                 "Cannot read all files from directory: " + inputDir + " , current listing : "
@@ -82,43 +93,48 @@ public class SFTPListingThread extends Thread {
                     if (!listing.isEmpty()) {
                         // remove any files that have been or are currently being processed.
                         listing.removeAll(inProcess);
-
-                        for (SFTPSourceRecord record : listing) {
-                            String absolutePath = record.getProperties().get(Constants.FILE_ABSOLUTE_PATH);
-                            String fileName = record.getProperties().get(Constants.FILE_NAME);
-                            if (!workQueue.contains(record)) {
-                                workQueue.offer(record);
-                                log.info("Add file[{}] to work queue ", absolutePath + "/" + fileName);
+                        listing.removeAll(workQueue);
+                        if (sftpConfig.getKeepFile()) {
+                            listing.removeAll(recentlyProcessed);
+                        }
+                        for (SFTPFileInfo fileInfo : listing) {
+                            String absolutePath = fileInfo.getDirectory();
+                            String fileName = fileInfo.getFileName();
+                            if (!workQueue.contains(fileInfo)
+                                    && !inProcess.contains(fileInfo)
+                                    && !recentlyProcessed.contains(fileInfo)) {
+                                fileInfo.setState(SFTPTaskState.AddWorkQueue);
+                                try {
+                                    workQueue.put(fileInfo);
+                                    queueLastUpdated.set(System.currentTimeMillis());
+                                    log.info("Add file[{}] to work queue ", absolutePath + "/" + fileName);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
-                        queueLastUpdated.set(System.currentTimeMillis());
                     }
                 } finally {
                     listingLock.unlock();
-                    sftp.logout();
                 }
             }
             try {
                 sleep(pollingInterval - 1);
             } catch (InterruptedException e) {
                 // Just ignore
-                log.error("Sleeping be interrupted in SFTPListingThread", e);
             }
         }
     }
 
     private void performListing(final String baseDirectory, final String currentDirectory, String illegalFileDir,
-                                SFTPUtil sftp,
-                                Set<SFTPSourceRecord> listing,
+                                Set<SFTPFileInfo> listing,
                                 Boolean isRecursive)
             throws NoSuchAlgorithmException, IOException {
-        boolean ignoreHiddenFiles = fileConfig.getIgnoreHiddenFiles();
-        String fileFilter = fileConfig.getFileFilter();
+        boolean ignoreHiddenFiles = sftpConfig.getIgnoreHiddenFiles();
+        String fileFilter = sftpConfig.getFileFilter();
         final Pattern filePattern = Pattern.compile(Optional.ofNullable(fileFilter)
                 .orElse("[^\\.].*"));
-
         Vector<ChannelSftp.LsEntry> fileAndFolderList = sftp.listFiles(currentDirectory);
-        Long maximumSize = fileConfig.getMaximumSize();
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
                 String fileName = item.getFilename();
@@ -131,36 +147,26 @@ public class SFTPListingThread extends Thread {
                 } else {
                     String realAbsolutePath = currentDirectory.replaceFirst(baseDirectory, "")
                             .replaceFirst("/", "");
-                    long fileSize = sftp.getFileSize(currentDirectory, item.getFilename());
-                    if (fileSize > maximumSize) {
-                        String illegalFilePath = illegalFileDir + "/" + realAbsolutePath;
-                        //`illegalFileDir` not existed, create it first
-                        if (!sftp.isDirExist(illegalFilePath)) {
-                            String[] dirs = ("/" + realAbsolutePath).split("/");
-                            sftp.createDirIfNotExist(dirs, illegalFileDir, dirs.length, 0);
-                        }
-                        log.debug("{} file size[{}] > maximumSize[{}], will be moved to illegal file path '{}'",
-                                    currentDirectory + "/" + fileName, fileSize, maximumSize, illegalFilePath);
-                        sftp.rename(currentDirectory + "/" + fileName, illegalFilePath + "/" + fileName);
+                    SFTPFileInfo fileInfo = new SFTPFileInfo(fileName, currentDirectory, realAbsolutePath,
+                            item.getAttrs().getAtimeString());
+                    if (listing.size() <= sftpConfig.getMaxFileNumOneListing()) {
+                        listing.add(fileInfo);
                     } else {
-                        byte[] file = sftp.download(currentDirectory, item.getFilename());
-                        if (file == null) {
-                            log.error("May download file '" + fileName + "'  from '" + currentDirectory
-                                    + "' failed , please check and download next file");
-                            return;
-                        }
-                        SFTPSourceRecord record = new SFTPSourceRecord(fileName, file, currentDirectory,
-                                realAbsolutePath, item.getAttrs().getAtimeString());
-                        listing.add(record);
+                        return;
                     }
                 }
             } else if (!(".".equals(item.getFilename()) || "..".equals(item.getFilename()))) {
                 if (isRecursive) {
                     performListing(baseDirectory, currentDirectory + "/" + item.getFilename(),
-                            illegalFileDir, sftp, listing, true);
+                            illegalFileDir, listing, true);
                 }
             }
         }
     }
 
+    @Override
+    public void close() {
+        stop = true;
+        sftp.logout();
+    }
 }

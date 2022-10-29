@@ -18,60 +18,111 @@
  */
 package org.apache.pulsar.io.sftp.source;
 
-import java.util.concurrent.BlockingQueue;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pulsar.io.core.PushSource;
+import org.apache.pulsar.io.sftp.common.SFTPTaskState;
+import org.apache.pulsar.io.sftp.common.TaskThread;
+import org.apache.pulsar.io.sftp.exception.SFTPFileNotExistException;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
  * Worker thread that consumes the contents of the files
  * and publishes them to a Pulsar topic.
  */
 @Slf4j
-public class SFTPConsumerThread extends Thread {
+public class SFTPConsumerThread extends TaskThread {
 
-    private final PushSource<byte[]> source;
-    private final BlockingQueue<SFTPSourceRecord> workQueue;
-    private final BlockingQueue<SFTPSourceRecord> inProcess;
-    private final BlockingQueue<SFTPSourceRecord> recentlyProcessed;
+    private final SFTPSource sftpSource;
+    private final SFTPUtil sftp;
+    private boolean stop = false;
 
-    public SFTPConsumerThread(PushSource<byte[]> source,
-                              BlockingQueue<SFTPSourceRecord> workQueue,
-                              BlockingQueue<SFTPSourceRecord> inProcess,
-                              BlockingQueue<SFTPSourceRecord> recentlyProcessed) {
-        this.source = source;
-        this.workQueue = workQueue;
-        this.inProcess = inProcess;
-        this.recentlyProcessed = recentlyProcessed;
+    public SFTPConsumerThread(SFTPSource sftpSource) {
+        this.sftpSource = sftpSource;
+        SFTPSourceConfig sftpConfig = sftpSource.getSFTPSourceConfig();
+        SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(),
+                sftpConfig.getPort());
+        sftp.login();
+        this.sftp = sftp;
     }
 
     public void run() {
         try {
-            while (true) {
-                SFTPSourceRecord file = workQueue.take();
+            while (!stop) {
+                SFTPFileInfo fileInfo = this.sftpSource.getWorkQueue().take();
+
                 boolean added = false;
                 do {
-                    added = inProcess.add(file);
+                    fileInfo.setState(SFTPTaskState.AddWorkQueue);
+                    added = this.sftpSource.getInProcess().add(fileInfo);
                 } while (!added);
-                consumeFile(file);
+                consumeFile(fileInfo);
             }
         } catch (InterruptedException e) {
             // just terminate
-            log.error("Take record from  workQueue be interrupted in SFTPConsumerThread", e);
         }
     }
 
-    private void consumeFile(SFTPSourceRecord file) {
-        source.consume(file);
-        boolean removed = false;
-        do {
-            removed = inProcess.remove(file);
-        } while (!removed);
+    private void consumeFile(SFTPFileInfo fileInfo) {
+        try {
+            filterLargerFile(fileInfo);
+            process(fileInfo);
+            boolean removed = false;
+            do {
+                removed = this.sftpSource.getInProcess().remove(fileInfo);
+            } while (!removed);
 
-        boolean added = false;
-        do {
-            added = recentlyProcessed.add(file);
-        } while (!added);
+            boolean added = false;
+            do {
+                if (!fileInfo.getState().equals(SFTPTaskState.Failed)) {
+                    fileInfo.setState(SFTPTaskState.Ending);
+                }
+                added = this.sftpSource.getRecentlyProcessed().add(fileInfo);
+            } while (!added);
+        } catch (SFTPFileNotExistException e) {
+            fileInfo.setState(SFTPTaskState.Failed);
+        } catch (IOException | NoSuchAlgorithmException e) {
+            fileInfo.setState(SFTPTaskState.Failed);
+            log.error("consumeFile[{}/{}] error:", fileInfo.getDirectory(), fileInfo.getFileName(), e);
+        }
     }
 
+    private void process(SFTPFileInfo fileInfo)
+            throws SFTPFileNotExistException, NoSuchAlgorithmException, IOException {
+        String fileName = fileInfo.getFileName();
+        String currentDirectory = fileInfo.getDirectory();
+        String realAbsolutePath = fileInfo.getRealAbsolutePath();
+        String modifiedTime = fileInfo.getModifiedTime();
+        byte[] file = sftp.download(currentDirectory, fileName);
+        if (file == null) {
+            throw new SFTPFileNotExistException(String.format("%s/%s not exist!", currentDirectory, fileName));
+        }
+        SFTPSourceRecord record = new SFTPSourceRecord(fileName, file, currentDirectory, realAbsolutePath,
+                modifiedTime);
+        sftpSource.consume(record);
+    }
 
+    private void filterLargerFile (SFTPFileInfo fileInfo) throws SFTPFileNotExistException {
+        String fileName = fileInfo.getFileName();
+        String currentDirectory = fileInfo.getDirectory();
+        String realAbsolutePath = fileInfo.getRealAbsolutePath();
+        long fileSize = sftp.getFileSize(currentDirectory, fileName);
+        if (fileSize == -1) {
+            throw new SFTPFileNotExistException(String.format("%s/%s not exist!", currentDirectory, fileName));
+        }
+        SFTPSourceConfig sftpSourceConfig = sftpSource.getSFTPSourceConfig();
+        long maximumSize = sftpSourceConfig.getMaximumSize();
+        if (fileSize > maximumSize) {
+            fileInfo.setState(SFTPTaskState.Failed);
+            String illegalFilePath =  sftpSourceConfig.getIllegalFileDirectory() + "/" + fileInfo.getRealAbsolutePath();
+            log.warn("{} file size[{}] > maximumSize[{}], will be moved to illegal file path '{}'",
+                    currentDirectory + "/" + fileName, fileSize, maximumSize, illegalFilePath);
+        }
+    }
+
+    @Override
+    public void close() {
+        stop = true;
+        sftp.logout();
+    }
 }

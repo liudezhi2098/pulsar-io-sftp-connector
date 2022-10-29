@@ -19,19 +19,21 @@
 package org.apache.pulsar.io.sftp;
 
 import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.SftpException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-@Ignore
+//@Ignore
 public class SFTPUtilTest {
 
     String username = "sftp_user";
@@ -68,7 +70,7 @@ public class SFTPUtilTest {
     }
 
     @Test
-    public void renameFileTest() {
+    public void renameFileTest() throws SftpException {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
         sftp.rename("/sftpdata/values-2.10.1.8.yaml", "/sftpdata/fujun/values-2.10.1.8.yaml");
@@ -135,7 +137,7 @@ public class SFTPUtilTest {
     }
 
     @Test
-    public void deleteFileTest() {
+    public void deleteFileTest() throws SftpException {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
         sftp.deleteFile("/sftpdata/fujun/values-2.10.1.8.yaml");
@@ -144,10 +146,34 @@ public class SFTPUtilTest {
     }
 
     @Test
-    public void recursiveDeleteTest() {
+    public void recursiveDeleteTest() throws SftpException {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
         sftp.recursiveDeleteFile("/sftpdata/fujun");
+        sftp.logout();
+    }
+
+    @Test
+    public void putFileTest() throws SftpException, IOException {
+        SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
+        sftp.login();
+        String path = "/sftpdata/poc/";
+        if (!sftp.isDirExist(path)) {
+            sftp.createDir(path);
+        }
+        Random random = new Random();
+        String localFilePath = "/Volumes/Macintosh-HD-Data/Users/dezhiliu/worker/poc/read";
+        for (int i = 0; i < 1000; i++) {
+            StringBuilder sb = new StringBuilder();
+            String fileName = localFilePath + "/test_" + i + ".txt";
+            for (int j = 0; j < 1024; j++) {
+                sb.append(random.nextInt(10));
+            }
+            FileWriter writer = new FileWriter(fileName, false);
+            writer.write(sb.toString());
+            writer.close();
+            sftp.upload(path, fileName);
+        }
         sftp.logout();
     }
 
