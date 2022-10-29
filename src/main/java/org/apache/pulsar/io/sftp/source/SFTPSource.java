@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
@@ -39,6 +40,7 @@ import org.apache.pulsar.io.sftp.common.TaskExecutors;
  * directory.
  */
 @NoArgsConstructor
+@Slf4j
 public class SFTPSource extends PushSource<byte[]> {
 
     private final BlockingQueue<SFTPFileInfo> workQueue = new LinkedBlockingQueue<>(1000);
@@ -90,7 +92,7 @@ public class SFTPSource extends PushSource<byte[]> {
                 pulsarClient.close();
             }
         } catch (PulsarClientException e) {
-            e.printStackTrace();
+            log.error("PulsarClientException error",e);
         }
 
     }

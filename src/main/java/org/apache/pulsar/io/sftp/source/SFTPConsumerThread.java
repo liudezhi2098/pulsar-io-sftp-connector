@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.io.sftp.common.SFTPTaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.exception.SFTPFileNotExistException;
@@ -63,15 +64,15 @@ public class SFTPConsumerThread extends TaskThread {
                         added = this.sftpSource.getInProcess().add(fileInfo);
                     } while (!added);
                     consumeFile(fileInfo);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (PulsarClientException e) {
+                    log.error("PulsarClientException error",e);
                 }
                 if (msg != null) {
                     consumer.acknowledge(msg);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (PulsarClientException e) {
+            log.error("PulsarClientException error",e);
             // just terminate
         }
     }
