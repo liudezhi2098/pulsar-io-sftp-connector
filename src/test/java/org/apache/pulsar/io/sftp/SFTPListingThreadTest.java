@@ -18,20 +18,18 @@
  */
 package org.apache.pulsar.io.sftp;
 
-import java.io.IOException;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.pulsar.io.sftp.source.SFTPListingThread;
+import org.apache.pulsar.io.sftp.source.SFTPSource;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
-import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
 import org.testng.annotations.Ignore;
 
 @Ignore
 public class SFTPListingThreadTest {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         String host = "20.120.20.201";
         String username = "sftp_user";
         String password = "12345678";
@@ -47,9 +45,9 @@ public class SFTPListingThreadTest {
         config.put("illegalFileDirectory", illegalFileDirectory);
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
-        BlockingQueue<SFTPSourceRecord> workQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<SFTPSourceRecord> inProcess = new LinkedBlockingQueue<>();
-        Thread t = new SFTPListingThread(sftpConfig, workQueue, inProcess);
+        SFTPSource source = new SFTPSource();
+        source.setSFTPSourceConfig(sftpConfig);
+        Thread t = new SFTPListingThread(source);
         t.start();
     }
 }

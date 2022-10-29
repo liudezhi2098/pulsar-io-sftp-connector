@@ -116,7 +116,7 @@ public class SFTPUtil {
         try {
             return sftp.ls(directory);
         } catch (SftpException e) {
-            log.error("List files in directory : " + directory + " failed", e);
+            log.error("List files in directory : {} failed", directory, e);
         }
         return new Vector<>();
     }
@@ -128,13 +128,8 @@ public class SFTPUtil {
      * @param newFilePath
      * @throws Exception
      */
-    public void rename(String oldFilePath, String newFilePath) {
-        try {
-            sftp.rename(oldFilePath, newFilePath);
-            log.info("File: '{}' is rename to '{}' success", oldFilePath, newFilePath);
-        } catch (SftpException e) {
-            log.error("Rename file '" + oldFilePath + "' to '" + newFilePath + "' failed", e);
-        }
+    public void rename(String oldFilePath, String newFilePath) throws SftpException {
+        sftp.rename(oldFilePath, newFilePath);
     }
 
     /**
@@ -149,9 +144,31 @@ public class SFTPUtil {
             sftp.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
             log.info("File: '{}' is upload to '{}' success", uploadFile, directory);
         } catch (SftpException | IOException e) {
-            log.error("Upload file '" + uploadFile + "' to  remote directory '" + directory + "' failed", e);
+            log.error("Upload file '{}' to  remote directory '{}' failed", uploadFile, directory, e);
         }
 
+    }
+
+    /**
+     * get file size.
+     *
+     * @param directory
+     * @param downloadFile
+     * @return
+     */
+    public long getFileSize(String directory, String downloadFile) {
+        if (directory != null && !"".equals(directory)) {
+            try {
+                SftpATTRS sftpATTRS = sftp.lstat(directory + "/" + downloadFile);
+                long fileSize = sftpATTRS.getSize();
+                return fileSize;
+            } catch (SftpException e) {
+                if (log.isDebugEnabled()) {
+                    log.error("get file  size from remote directory {} failed", downloadFile, directory, e);
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -164,15 +181,22 @@ public class SFTPUtil {
     public byte[] download(String directory, String downloadFile) {
         if (directory != null && !"".equals(directory)) {
             try {
+                long startTime = System.currentTimeMillis();
                 InputStream is = sftp.get(directory + "/" + downloadFile);
                 byte[] fileData = IOUtils.toByteArray(is);
-                log.info("File: '{}/{}' is download success", directory, downloadFile);
+                is.close();
+                long useTime = System.currentTimeMillis() - startTime;
+                log.info("File: '{}/{}' is download success, size({}) use time {} ms", directory, downloadFile,
+                        fileData.length, useTime);
                 return fileData;
             } catch (SftpException | IOException e) {
-                log.error("Download file '" + downloadFile + "' from  remote directory '" + directory + "' failed", e);
+                if (e.getMessage().contains("No such file")) {
+                    log.warn("file {} not exist.", downloadFile, e);
+                } else {
+                    log.error("Download file '{}' from  remote directory '{}' failed", downloadFile, directory, e);
+                }
             }
         }
-        log.error("Directory is null or blank value,please check!");
         return null;
     }
 
@@ -223,8 +247,9 @@ public class SFTPUtil {
     public void createDir(String directory) {
         try {
             sftp.mkdir(directory);
+            log.info("Create directory '{}' success", directory);
         } catch (SftpException e) {
-            log.error("Create directory '" + directory + "' failed", e);
+            log.error("Create directory '{}' failed", directory, e);
         }
     }
 
@@ -240,22 +265,28 @@ public class SFTPUtil {
         index++;
         if (index < length) {
             tempPath += "/" + dirs[index];
+        } else {
+            return;
         }
         try {
-            log.info("check directory [" + tempPath + "]");
-            sftp.cd(tempPath);
+            if (isDirExist(tempPath)) {
+                sftp.cd(tempPath);
+            } else {
+                sftp.mkdir(tempPath);
+                sftp.cd(tempPath);
+            }
             if (index < length) {
                 createDirIfNotExist(dirs, tempPath, length, index);
             }
         } catch (SftpException ex) {
-            log.warn("create directory [" + tempPath + "]");
+            log.error("create directory [{}]", tempPath, ex);
             try {
                 sftp.mkdir(tempPath);
                 sftp.cd(tempPath);
             } catch (SftpException e) {
-                log.error("create directory [" + tempPath + "] failed", e);
+                log.error("create directory [{}] failed", tempPath,  e);
             }
-            log.info("cd directory [" + tempPath + "]");
+            log.info("cd directory [{}]", tempPath);
             createDirIfNotExist(dirs, tempPath, length, index);
         }
     }
@@ -268,8 +299,9 @@ public class SFTPUtil {
     public void removeDir(String directory) {
         try {
             sftp.rmdir(directory);
+            log.info("Remove directory '{}' success", directory);
         } catch (SftpException e) {
-            log.error("Remove directory '" + directory + "' failed", e);
+            log.error("Remove directory '{}' failed", directory,  e);
         }
     }
 
@@ -278,22 +310,17 @@ public class SFTPUtil {
      *
      * @param deleteFilePath
      */
-    public void deleteFile(String deleteFilePath) {
-        try {
-            sftp.rm(deleteFilePath);
-            log.info("File:{} is delete success", deleteFilePath);
-        } catch (SftpException e) {
-            log.error("Delete file : " + deleteFilePath + " failed", e);
-        }
+    public void deleteFile(String deleteFilePath) throws SftpException {
+        sftp.rm(deleteFilePath);
+        log.info("delete file {} is delete success", deleteFilePath);
     }
-
 
     /**
      * recursive delete file.
      *
      * @param directory
      */
-    public void recursiveDeleteFile(String directory) {
+    public void recursiveDeleteFile(String directory) throws SftpException {
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {

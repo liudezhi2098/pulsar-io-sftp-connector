@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.sftp.source.FileSourceRecord;
+import org.apache.pulsar.io.sftp.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,9 +62,9 @@ public class FileWriteThread extends Thread {
         try {
             Message<byte[]> msg = record.getMessage().get();
             byte[] contents = msg.getValue();
-            String name = new File(msg.getProperty(FileSourceRecord.FILE_NAME)).getName();
+            String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
             String fileName = sink.getFileSinkConfig().getOutDirectory() + "/" + name;
-            String md5 = msg.getProperty(FileSourceRecord.FILE_MD5);
+            String md5 = msg.getProperty(Constants.FILE_MD5);
             File writeFile = new File(fileName);
             if (writeFile.exists()) {
                 writeFile.delete();

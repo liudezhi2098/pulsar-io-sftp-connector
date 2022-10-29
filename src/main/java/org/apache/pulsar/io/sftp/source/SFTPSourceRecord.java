@@ -48,8 +48,8 @@ public class SFTPSourceRecord implements Record<byte[]> {
     private final byte[] value;
     private final HashMap<String, String> userProperties = new HashMap<String, String>();
 
-    public SFTPSourceRecord(String fileName, byte[] byt, String absolutePath, String modifiedTime)
-            throws NoSuchAlgorithmException, IOException {
+    public SFTPSourceRecord(String fileName, byte[] byt, String absolutePath, String realAbsolutePath,
+                            String modifiedTime) throws NoSuchAlgorithmException, IOException {
         this.key = Optional.of(fileName);
         this.value = byt;
         this.setProperty(FILE_NAME, fileName);

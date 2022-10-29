@@ -19,16 +19,16 @@
 package org.apache.pulsar.io.sftp;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import org.apache.pulsar.io.sftp.source.ProcessedSFTPThread;
+import org.apache.pulsar.io.sftp.source.SFTPFileInfo;
+import org.apache.pulsar.io.sftp.source.SFTPProcessedThread;
+import org.apache.pulsar.io.sftp.source.SFTPSource;
 import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
-import org.apache.pulsar.io.sftp.source.SFTPSourceRecord;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 import org.testng.annotations.Ignore;
 
 @Ignore
@@ -50,15 +50,17 @@ public class ProcessedSFTPThreadTest {
         config.put("keepFile", false);
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
-
-        BlockingQueue<SFTPSourceRecord> recentlyProcessed = new LinkedBlockingQueue<>();
+        SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(), 22);
+        sftp.login();
+        SFTPSource source = new SFTPSource();
+        source.setSFTPSourceConfig(sftpConfig);
+        BlockingQueue<SFTPFileInfo> recentlyProcessed = source.getRecentlyProcessed();
         for (int i = 0; i < 10; i++) {
-            SFTPSourceRecord record =
-                    new SFTPSourceRecord("fujun" + i + ".txt", ("fujun" + i).getBytes(StandardCharsets.UTF_8), ".",
-                            new Date().toString());
+            SFTPFileInfo record = new SFTPFileInfo("fujun" + i + ".txt", inputDirectory, inputDirectory,
+                    new Date().toString());
             recentlyProcessed.offer(record);
         }
-        Thread t = new ProcessedSFTPThread(sftpConfig, recentlyProcessed);
+        Thread t = new SFTPProcessedThread(source);
         t.start();
     }
 }

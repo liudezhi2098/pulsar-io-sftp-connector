@@ -98,9 +98,14 @@ public class SFTPSourceConfig implements Serializable {
     private String fileFilter = "[^.].*";
 
     /**
-     * The maximum size (in bytes) that a file can be in order to be processed.
+     * The maximum size (in Bytes) that a file can be in order to be processed.
      */
-    private Double maximumSize = 8388608.0;
+    private Long maximumSize = 1048576L;
+
+    /**
+     * The maxi num  file  that a sftp listing can be in order to be processed.
+     */
+    private int maxFileNumListing = 100;
 
     /**
      * Indicates whether or not hidden files should be ignored or not.
@@ -119,6 +124,17 @@ public class SFTPSourceConfig implements Serializable {
      * from multiple files being "intermingled" in the target topic.
      */
     private Integer numWorkers = 1;
+
+    /**
+     * Used to distribute synchronization tasks,
+     * The producer has only one instance listening to the directory through WaitForExclusive mode.
+     */
+    private String sftpTaskTopic = "sftp_task";
+
+    /**
+     * synchronization tasks subscript name.
+     */
+    private String sftpTaskTopicSubscriptionName = "sftp_task_sub";
 
     public static SFTPSourceConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -148,7 +164,15 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Property password & privateKey cannot be both set.");
         }
 
-        if (maximumSize != null && Math.signum(maximumSize) < 0) {
+        if (StringUtils.isBlank(sftpTaskTopic)) {
+            throw new IllegalArgumentException("property sftpTaskTopic can not empty.");
+        }
+
+        if (StringUtils.isBlank(sftpTaskTopicSubscriptionName)) {
+            throw new IllegalArgumentException("Required property sftpTaskTopicSubscriptionName can not empty.");
+        }
+
+        if (maximumSize != null && maximumSize < 0) {
             throw new IllegalArgumentException("The property maximumSize must be non-negative");
         }
 
