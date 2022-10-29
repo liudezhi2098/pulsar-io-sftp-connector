@@ -31,6 +31,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.ProducerAccessMode;
+import org.apache.pulsar.client.api.PulsarClientException;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.io.sftp.common.SFTPTaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
@@ -47,25 +51,17 @@ public class SFTPListingThread extends TaskThread {
     private final Lock listingLock = new ReentrantLock();
     private final SFTPUtil sftp;
     private boolean stop = false;
+    private final SFTPSource sftpSource;
     private final SFTPSourceConfig sftpConfig;
-    private final BlockingQueue<SFTPFileInfo> workQueue;
     private final BlockingQueue<SFTPFileInfo> inProcess;
     private final BlockingQueue<SFTPFileInfo> recentlyProcessed;
+    private Producer<SFTPFileInfo> producer;
 
-    public SFTPListingThread(SFTPSource sftpSource) {
-        this(sftpSource.getSFTPSourceConfig(), sftpSource.getWorkQueue(), sftpSource.getInProcess(),
-                sftpSource.getRecentlyProcessed()
-        );
-    }
-
-    public SFTPListingThread(SFTPSourceConfig sftpConfig,
-                             BlockingQueue<SFTPFileInfo> workQueue,
-                             BlockingQueue<SFTPFileInfo> inProcess,
-                             BlockingQueue<SFTPFileInfo> recentlyProcessed) {
-        this.workQueue = workQueue;
-        this.inProcess = inProcess;
-        this.recentlyProcessed = recentlyProcessed;
-        this.sftpConfig = sftpConfig;
+    public SFTPListingThread(SFTPSource sftpSource) throws PulsarClientException {
+        this.sftpSource = sftpSource;
+        this.inProcess = sftpSource.getInProcess();
+        this.recentlyProcessed = sftpSource.getRecentlyProcessed();
+        this.sftpConfig = sftpSource.getSFTPSourceConfig();
         SFTPUtil sftp = new SFTPUtil(sftpConfig.getUsername(), sftpConfig.getPassword(), sftpConfig.getHost(),
                 sftpConfig.getPort());
         sftp.login();
@@ -74,7 +70,15 @@ public class SFTPListingThread extends TaskThread {
 
     public void run() {
         long pollingInterval = Optional.ofNullable(sftpConfig.getPollingInterval()).orElse(10000L);
-
+        try {
+            producer = sftpSource.getPulsarClient().newProducer(Schema.JSON(SFTPFileInfo.class))
+                    .accessMode(ProducerAccessMode.WaitForExclusive)
+                    .topic(sftpConfig.getSftpTaskTopic())
+                    .create();
+        } catch (PulsarClientException e) {
+            log.error("create producer error,", e);
+        }
+        Set<SFTPFileInfo> lastFileslisting = new HashSet<>();
         while (!stop) {
             if ((queueLastUpdated.get() < System.currentTimeMillis() - pollingInterval) && listingLock.tryLock()) {
                 try {
@@ -92,27 +96,28 @@ public class SFTPListingThread extends TaskThread {
                     }
                     if (!listing.isEmpty()) {
                         // remove any files that have been or are currently being processed.
-                        listing.removeAll(inProcess);
-                        listing.removeAll(workQueue);
+                        listing.removeAll(lastFileslisting);
                         if (sftpConfig.getKeepFile()) {
                             listing.removeAll(recentlyProcessed);
                         }
                         for (SFTPFileInfo fileInfo : listing) {
                             String absolutePath = fileInfo.getDirectory();
                             String fileName = fileInfo.getFileName();
-                            if (!workQueue.contains(fileInfo)
-                                    && !inProcess.contains(fileInfo)
+                            if (!inProcess.contains(fileInfo)
                                     && !recentlyProcessed.contains(fileInfo)) {
                                 fileInfo.setState(SFTPTaskState.AddWorkQueue);
                                 try {
-                                    workQueue.put(fileInfo);
+                                    producer.send(fileInfo);
                                     queueLastUpdated.set(System.currentTimeMillis());
-                                    log.info("Add file[{}] to work queue ", absolutePath + "/" + fileName);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                                    log.info("Add file[{}] to topic[{}] success ", absolutePath + "/" + fileName,
+                                            sftpConfig.getSftpTaskTopic());
+                                } catch (PulsarClientException e) {
+                                    log.error("Add file[{}] to topic[{}] error ", absolutePath + "/" + fileName,
+                                            sftpConfig.getSftpTaskTopic());
                                 }
                             }
                         }
+                        lastFileslisting = listing;
                     }
                 } finally {
                     listingLock.unlock();
@@ -149,7 +154,7 @@ public class SFTPListingThread extends TaskThread {
                             .replaceFirst("/", "");
                     SFTPFileInfo fileInfo = new SFTPFileInfo(fileName, currentDirectory, realAbsolutePath,
                             item.getAttrs().getAtimeString());
-                    if (listing.size() <= sftpConfig.getMaxFileNumOneListing()) {
+                    if (listing.size() <= sftpConfig.getMaxFileNumListing()) {
                         listing.add(fileInfo);
                     } else {
                         return;
@@ -168,5 +173,12 @@ public class SFTPListingThread extends TaskThread {
     public void close() {
         stop = true;
         sftp.logout();
+        if (producer != null) {
+            try {
+                producer.close();
+            } catch (PulsarClientException e) {
+                log.error("close producer error,", e);
+            }
+        }
     }
 }

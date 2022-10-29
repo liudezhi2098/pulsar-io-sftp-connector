@@ -24,12 +24,15 @@ import org.apache.pulsar.io.sftp.common.SFTPTaskState;
 
 @Data
 public class SFTPFileInfo {
-
-    private final String fileName;
-    private final String directory;
-    private final String realAbsolutePath;
-    private final String modifiedTime;
+    private static final long serialVersionUID = 1L;
+    private String fileName;
+    private String directory;
+    private String realAbsolutePath;
+    private String modifiedTime;
     private SFTPTaskState state = SFTPTaskState.None;
+
+    public SFTPFileInfo() {
+    }
 
     public SFTPFileInfo(String fileName, String directory, String realAbsolutePath, String modifiedTime) {
         this.fileName = fileName;

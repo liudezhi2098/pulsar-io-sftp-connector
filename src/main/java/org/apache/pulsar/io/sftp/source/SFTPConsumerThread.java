@@ -21,6 +21,8 @@ package org.apache.pulsar.io.sftp.source;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pulsar.client.api.Consumer;
+import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.io.sftp.common.SFTPTaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.exception.SFTPFileNotExistException;
@@ -36,6 +38,7 @@ public class SFTPConsumerThread extends TaskThread {
     private final SFTPSource sftpSource;
     private final SFTPUtil sftp;
     private boolean stop = false;
+    private final Consumer<SFTPFileInfo> consumer;
 
     public SFTPConsumerThread(SFTPSource sftpSource) {
         this.sftpSource = sftpSource;
@@ -44,21 +47,31 @@ public class SFTPConsumerThread extends TaskThread {
                 sftpConfig.getPort());
         sftp.login();
         this.sftp = sftp;
+        this.consumer = sftpSource.getConsumer();
     }
 
     public void run() {
         try {
             while (!stop) {
-                SFTPFileInfo fileInfo = this.sftpSource.getWorkQueue().take();
-
-                boolean added = false;
-                do {
-                    fileInfo.setState(SFTPTaskState.AddWorkQueue);
-                    added = this.sftpSource.getInProcess().add(fileInfo);
-                } while (!added);
-                consumeFile(fileInfo);
+                Message<SFTPFileInfo> msg = null;
+                try {
+                    msg = consumer.receive();
+                    SFTPFileInfo fileInfo = msg.getValue();
+                    boolean added = false;
+                    do {
+                        fileInfo.setState(SFTPTaskState.AddWorkQueue);
+                        added = this.sftpSource.getInProcess().add(fileInfo);
+                    } while (!added);
+                    consumeFile(fileInfo);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (msg != null) {
+                    consumer.acknowledge(msg);
+                }
             }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
             // just terminate
         }
     }
@@ -105,7 +118,6 @@ public class SFTPConsumerThread extends TaskThread {
     private void filterLargerFile (SFTPFileInfo fileInfo) throws SFTPFileNotExistException {
         String fileName = fileInfo.getFileName();
         String currentDirectory = fileInfo.getDirectory();
-        String realAbsolutePath = fileInfo.getRealAbsolutePath();
         long fileSize = sftp.getFileSize(currentDirectory, fileName);
         if (fileSize == -1) {
             throw new SFTPFileNotExistException(String.format("%s/%s not exist!", currentDirectory, fileName));

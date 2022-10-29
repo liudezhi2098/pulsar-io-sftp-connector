@@ -190,8 +190,8 @@ public class SFTPUtil {
                         fileData.length, useTime);
                 return fileData;
             } catch (SftpException | IOException e) {
-                if(e.getMessage().contains("No such file")) {
-                    log.warn("file {} not exist." ,downloadFile, e);
+                if (e.getMessage().contains("No such file")) {
+                    log.warn("file {} not exist.", downloadFile, e);
                 } else {
                     log.error("Download file '{}' from  remote directory '{}' failed", downloadFile, directory, e);
                 }

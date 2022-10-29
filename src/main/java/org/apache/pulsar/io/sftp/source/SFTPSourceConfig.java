@@ -104,7 +104,7 @@ public class SFTPSourceConfig implements Serializable {
     /**
      * The maxi num  file  that a sftp listing can be in order to be processed.
      */
-    private int maxFileNumOneListing = 100;
+    private int maxFileNumListing = 100;
 
     /**
      * Indicates whether or not hidden files should be ignored or not.
@@ -123,6 +123,17 @@ public class SFTPSourceConfig implements Serializable {
      * from multiple files being "intermingled" in the target topic.
      */
     private Integer numWorkers = 1;
+
+    /**
+     * Used to distribute synchronization tasks,
+     * The producer has only one instance listening to the directory through WaitForExclusive mode.
+     */
+    private String sftpTaskTopic = "sftp_task";
+
+    /**
+     * synchronization tasks subscript name.
+     */
+    private String sftpTaskTopicSubscriptionName = "sftp_task_sub";
 
     public static SFTPSourceConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
