@@ -30,6 +30,7 @@ import java.util.regex.PatternSyntaxException;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
 /**
  * Configuration class for the SFTP Source Connector.
@@ -163,6 +164,14 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Property password & privateKey cannot be both set.");
         }
 
+        if (StringUtils.isBlank(sftpTaskTopic)) {
+            throw new IllegalArgumentException("property sftpTaskTopic can not empty.");
+        }
+
+        if (StringUtils.isBlank(sftpTaskTopicSubscriptionName)) {
+            throw new IllegalArgumentException("Required property sftpTaskTopicSubscriptionName can not empty.");
+        }
+
         if (maximumSize != null && maximumSize < 0) {
             throw new IllegalArgumentException("The property maximumSize must be non-negative");
         }
@@ -225,17 +234,16 @@ public class SFTPSourceConfig implements Serializable {
     }
 
     private Boolean isSftpDirExist(String directory) {
-//        SFTPUtil sftp;
-//        if (StringUtils.isNotBlank(password)) {
-//            sftp = new SFTPUtil(username, password, host, port);
-//        } else {
-//            sftp = new SFTPUtil(username, host, port, privateKey);
-//        }
-//        sftp.login();
-//        Boolean exist = sftp.isDirExist(directory);
-//        sftp.logout();
-//        return exist;
-        return true;
+        SFTPUtil sftp;
+        if (StringUtils.isNotBlank(password)) {
+            sftp = new SFTPUtil(username, password, host, port);
+        } else {
+            sftp = new SFTPUtil(username, host, port, privateKey);
+        }
+        sftp.login();
+        Boolean exist = sftp.isDirExist(directory);
+        sftp.logout();
+        return exist;
     }
 
     private Boolean isLegalSuffix(String directory) {

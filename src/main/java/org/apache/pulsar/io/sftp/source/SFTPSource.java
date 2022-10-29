@@ -28,6 +28,7 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.SubscriptionType;
+import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.io.core.PushSource;
 import org.apache.pulsar.io.core.SourceContext;
 import org.apache.pulsar.io.sftp.common.TaskExecutors;
@@ -52,6 +53,10 @@ public class SFTPSource extends PushSource<byte[]> {
     public void open(Map<String, Object> config, SourceContext sourceContext) throws Exception {
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
         sftpConfig.validate();
+        if (TopicName.get(sftpConfig.getSftpTaskTopic())
+                .equals(TopicName.get(sourceContext.getOutputTopic()))) {
+            throw new RuntimeException("sftpTaskTopic can not same with destination-topic-name");
+        }
         this.sftpConfig = sftpConfig;
         pulsarClient = sourceContext.getPulsarClient();
         consumer = pulsarClient.newConsumer(Schema.JSON(SFTPFileInfo.class))

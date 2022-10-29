@@ -28,9 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 
 /**
@@ -56,7 +54,6 @@ public class SFTPSourceRecord implements Record<byte[]> {
         this.value = byt;
         this.setProperty(FILE_NAME, fileName);
         this.setProperty(FILE_ABSOLUTE_PATH, absolutePath);
-        this.setProperty(Constants.FILE_ABSOLUTE_PATH, StringUtils.isBlank(realAbsolutePath) ? "." : realAbsolutePath);
         this.setProperty(FILE_MODIFIED_TIME, modifiedTime);
         this.setProperty(FILE_MD5, FileUtil.getFileMD5(byt));
     }
