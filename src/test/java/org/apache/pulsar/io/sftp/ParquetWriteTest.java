@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.sftp.sink;
+package org.apache.pulsar.io.sftp;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.charset.StandardCharsets;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.ParquetProperties;
@@ -35,46 +35,20 @@ import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
-import org.apache.pulsar.client.api.Message;
-import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.sftp.sink.FileSinkConfig;
 import org.apache.pulsar.io.sftp.utils.Constants;
 
-/**
- * Worker thread that consumes the contents of the files
- * and publishes them to a Pulsar topic.
- */
-@Slf4j
-public class FileWriteThread extends Thread {
-
-    private final FileSink sink;
-
-    public FileWriteThread(FileSink sink) {
-        this.sink = sink;
-    }
-
-    public void run() {
-        try {
-            while (true) {
-                Record<byte[]> record = sink.getQueue().take();
-                try {
-                    FileSinkConfig sinkConf = sink.getFileSinkConfig();
-                    writeToParquetFile(record,sinkConf);
-                    //writeToFile(record);
-                    record.ack();
-                } catch (Exception e) {
-                    record.fail();
-                    log.error("FileWriteThread run error", e);
-                }
-            }
-        } catch (InterruptedException e) {
-            // just terminate
-        }
-    }
-
-    private void writeToParquetFile(Record<byte[]> record,FileSinkConfig sinkConfig)  {
+public class ParquetWriteTest {
+    public static void main(String[] args) throws IOException {
+        Map<String,Object> conf = new HashMap<>();
+        conf.put("outDirectory","/Users/fujun/Desktop");
+        //conf.put("compressionCodecName","/Users/fujun/Desktop");
+        conf.put("parquetWriterVersion","v2");
+        conf.put("parquetWriterMode","overwrite");
+        FileSinkConfig sinkConfig = FileSinkConfig.load(conf);
+        sinkConfig.validate();
 
         String outDirectory = sinkConfig.getOutDirectory();
-        //todo
         String parquetFileName = "file.parquet";
         String parquetFilePath = outDirectory + "/" + parquetFileName;
         ParquetFileWriter.Mode mode;
@@ -107,52 +81,29 @@ public class FileWriteThread extends Thread {
                     .build();
             SimpleGroupFactory simpleGroupFactory = new SimpleGroupFactory(schema);
             Group group = simpleGroupFactory.newGroup();
-            group.add(Constants.ID, record.getMessage().get().getSequenceId());
-            group.add(Constants.TOPIC, record.getTopicName().get());
-            group.add(Constants.MESSAGE, new String(record.getValue(), StandardCharsets.UTF_8));
-            group.add(Constants.CREATE_TIME, 0);
+            group.add(Constants.ID, UUID.randomUUID().toString());
+            group.add(Constants.TOPIC, "jun_test");
+            group.add(Constants.MESSAGE, "{\"before\":null,\"after\":{\"id\":5,\"name\":\"我\",\"sex\":\"man\","
+                    + "\"city\":null},\"source\":{\"version\":\"1.7.1.Final\",\"connector\":\"mysql\","
+                    + "\"name\":\"test4\",\"ts_ms\":1667375397000,\"snapshot\":\"false\",\"db\":\"test_1\","
+                    + "\"sequence\":null,\"table\":\"t1\",\"server_id\":1000,\"gtid\":null,\"file\":\"mysql-bin"
+                    + ".000003\",\"pos\":2987,\"row\":0,\"thread\":null,\"query\":\"INSERT INTO `test_1`.`t1`(`id`, "
+                    + "`name`, `sex`,`city`) VALUES (5, '我', 'man','')\"},\"op\":\"c\",\"ts_ms\":1667375397457,"
+                    + "\"transaction\":null}");
+            group.add(Constants.CREATE_TIME, new Date().getTime());
             writer.write(group);
 
         } catch (IOException e) {
-            log.error("Write parquet file error", e);
+            e.printStackTrace();
         } finally {
             try {
-                if(writer != null){
-                    writer.close();
-                }
+                writer.close();
             } catch (IOException e) {
-                log.error("Close ParquetWriter error", e);
+                throw new RuntimeException(e);
             }
         }
 
-
     }
 
-    private void writeToFile(Record<byte[]> record) throws IOException {
-        RandomAccessFile randomFile = null;
-        try {
-            Message<byte[]> msg = record.getMessage().get();
-            byte[] contents = msg.getValue();
-            String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
-            String fileName = sink.getFileSinkConfig().getOutDirectory() + "/" + name;
-            String md5 = msg.getProperty(Constants.FILE_MD5);
-            File writeFile = new File(fileName);
-            if (writeFile.exists()) {
-                writeFile.delete();
-            }
-            randomFile = new RandomAccessFile(fileName, "rw");
-            randomFile.seek(randomFile.length());
-            randomFile.write(contents);
-            randomFile.close();
-            randomFile = null;
-        } finally {
-            if (randomFile != null) {
-                try {
-                    randomFile.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+
 }
