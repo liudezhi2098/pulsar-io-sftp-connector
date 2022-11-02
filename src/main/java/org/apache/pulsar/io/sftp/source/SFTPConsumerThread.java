@@ -65,14 +65,14 @@ public class SFTPConsumerThread extends TaskThread {
                     } while (!added);
                     consumeFile(fileInfo);
                 } catch (PulsarClientException e) {
-                    log.error("PulsarClientException error",e);
+                    log.error("PulsarClientException error", e);
                 }
                 if (msg != null) {
                     consumer.acknowledge(msg);
                 }
             }
         } catch (PulsarClientException e) {
-            log.error("PulsarClientException error",e);
+            log.error("PulsarClientException error", e);
             // just terminate
         }
     }

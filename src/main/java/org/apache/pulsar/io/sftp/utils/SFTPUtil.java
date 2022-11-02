@@ -62,7 +62,18 @@ public class SFTPUtil {
         this.privateKey = privateKey;
     }
 
-
+    private void checkState() {
+        if (session != null && sftp != null) {
+            if (!session.isConnected() || !sftp.isConnected() || sftp.isClosed()) {
+                try {
+                    logout();
+                    login();
+                } catch (Exception e) {
+                    log.error("check sftp server state error, ", e);
+                }
+            }
+        }
+    }
     /**
      * login server.
      */
@@ -113,6 +124,7 @@ public class SFTPUtil {
      * @throws SftpException
      */
     public Vector<ChannelSftp.LsEntry> listFiles(String directory) {
+        checkState();
         try {
             return sftp.ls(directory);
         } catch (SftpException e) {
@@ -129,6 +141,7 @@ public class SFTPUtil {
      * @throws Exception
      */
     public void rename(String oldFilePath, String newFilePath) throws SftpException {
+        checkState();
         sftp.rename(oldFilePath, newFilePath);
     }
 
@@ -139,6 +152,7 @@ public class SFTPUtil {
      * @param uploadFile
      */
     public void upload(String directory, String uploadFile) {
+        checkState();
         try {
             File file = new File(uploadFile);
             sftp.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
@@ -157,6 +171,7 @@ public class SFTPUtil {
      * @return
      */
     public long getFileSize(String directory, String downloadFile) {
+        checkState();
         if (directory != null && !"".equals(directory)) {
             try {
                 SftpATTRS sftpATTRS = sftp.lstat(directory + "/" + downloadFile);
@@ -179,6 +194,7 @@ public class SFTPUtil {
      * @return
      */
     public byte[] download(String directory, String downloadFile) {
+        checkState();
         if (directory != null && !"".equals(directory)) {
             try {
                 long startTime = System.currentTimeMillis();
@@ -207,6 +223,7 @@ public class SFTPUtil {
      * @param fileList
      */
     public void recursiveDownloadFile(String directory, List<byte[]> fileList, Boolean isRecursive) {
+        checkState();
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
@@ -226,6 +243,7 @@ public class SFTPUtil {
      * @return
      */
     public boolean isDirExist(String directory) {
+        checkState();
         boolean isDirExistFlag = false;
         try {
             SftpATTRS sftpATTRS = sftp.lstat(directory);
@@ -245,6 +263,7 @@ public class SFTPUtil {
      * @param directory
      */
     public void createDir(String directory) {
+        checkState();
         try {
             sftp.mkdir(directory);
             log.info("Create directory '{}' success", directory);
@@ -262,6 +281,7 @@ public class SFTPUtil {
      * @param index
      */
     public void createDirIfNotExist(String[] dirs, String tempPath, int length, int index) {
+        checkState();
         index++;
         if (index < length) {
             tempPath += "/" + dirs[index];
@@ -297,6 +317,7 @@ public class SFTPUtil {
      * @param directory
      */
     public void removeDir(String directory) {
+        checkState();
         try {
             sftp.rmdir(directory);
             log.info("Remove directory '{}' success", directory);
@@ -311,6 +332,7 @@ public class SFTPUtil {
      * @param deleteFilePath
      */
     public void deleteFile(String deleteFilePath) throws SftpException {
+        checkState();
         sftp.rm(deleteFilePath);
         log.info("delete file {} is delete success", deleteFilePath);
     }
@@ -321,6 +343,7 @@ public class SFTPUtil {
      * @param directory
      */
     public void recursiveDeleteFile(String directory) throws SftpException {
+        checkState();
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
