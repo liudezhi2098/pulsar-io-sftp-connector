@@ -63,16 +63,15 @@ public class SFTPUtil {
     }
 
     private void checkState() {
-        if (session != null && sftp != null) {
-            if (!session.isConnected() || !sftp.isConnected() || sftp.isClosed()) {
-                try {
-                    logout();
-                    login();
-                } catch (Exception e) {
-                    log.error("check sftp server state error, ", e);
-                }
+        if (session == null || sftp == null || !session.isConnected() || !sftp.isConnected() || sftp.isClosed()) {
+            try {
+                logout();
+                login();
+            } catch (Exception e) {
+                log.error("check sftp server state error, ", e);
             }
         }
+
     }
     /**
      * login server.
