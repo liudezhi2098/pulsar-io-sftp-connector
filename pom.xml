@@ -48,13 +48,8 @@
         <commons-lang3.version>3.11</commons-lang3.version>
         <commons-io.version>2.8.0</commons-io.version>
         <commons-codec.version>1.15</commons-codec.version>
-        <jsch.version>0.1.55</jsch.version>
-        <hadoop-client.version>3.3.1</hadoop-client.version>
-        <parquet-avro.version>1.12.3</parquet-avro.version>
-        <fastjson.version>2.0.16</fastjson.version>
+        <jsch.version>0.2.1</jsch.version>
         <!-- test dependencies -->
-        <netty-transport.version>4.1.74.Final</netty-transport.version>
-        <protobuf-java.version>3.21.9</protobuf-java.version>
         <testng.version>7.3.0</testng.version>
         <awaitility.version>4.0.3</awaitility.version>
         <mockito.version>3.12.4</mockito.version>
@@ -123,7 +118,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.jcraft</groupId>
+            <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
             <version>${jsch.version}</version>
         </dependency>
@@ -132,63 +127,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback-classic.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-client</artifactId>
-            <version>${hadoop-client.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-avro</artifactId>
-            <version>${parquet-avro.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>${fastjson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.streamnative</groupId>
-            <artifactId>pulsar-functions-local-runner-original</artifactId>
-            <version>${pulsar.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-all</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-testing</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-auth</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport</artifactId>
-            <version>${netty-transport.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf-java.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
