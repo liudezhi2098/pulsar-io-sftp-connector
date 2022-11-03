@@ -18,7 +18,7 @@
  */
 package org.apache.pulsar.io.sftp;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,23 +28,38 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.ParquetProperties;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroupFactory;
+import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.hadoop.ParquetFileWriter;
+import org.apache.parquet.hadoop.ParquetInputFormat;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.ExampleParquetWriter;
+import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Types;
+
+import java.io.IOException;
 import org.apache.pulsar.io.sftp.sink.FileSinkConfig;
 import org.apache.pulsar.io.sftp.utils.Constants;
+import org.testng.annotations.Test;
 
-public class ParquetWriteTest {
-    public static void main(String[] args) throws IOException {
+
+public class ParquetRWTest {
+
+    @Test
+    public void writeToParquet() throws IOException {
         Map<String,Object> conf = new HashMap<>();
         conf.put("outDirectory","/Users/fujun/Desktop");
         //conf.put("compressionCodecName","/Users/fujun/Desktop");
         conf.put("parquetWriterVersion","v2");
         conf.put("parquetWriterMode","overwrite");
+        conf.put("fileWriteClass","org.apache.pulsar.io.sftp.sink.MessageToParquetFileWriter");
         FileSinkConfig sinkConfig = FileSinkConfig.load(conf);
         sinkConfig.validate();
 
@@ -97,12 +112,51 @@ public class ParquetWriteTest {
             e.printStackTrace();
         } finally {
             try {
-                writer.close();
+                if (writer != null) {
+                    writer.close();
+                }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         }
 
+    }
+
+    @Test
+    public void readFormParquet() throws IOException {
+        Configuration configuration = new Configuration();
+        String schemaName = Constants.SCHEMA_NAME;
+        String filePath = "/Users/fujun/Desktop/file.parquet";
+
+        // set filter
+        //ParquetInputFormat.setFilterPredicate(configuration, lt(longColumn("id"), (long)(5)));
+        FilterCompat.Filter filter = ParquetInputFormat.getFilter(configuration);
+
+        // set schema
+        Types.MessageTypeBuilder builder = Types.buildMessage();
+        builder.addField(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveType.PrimitiveTypeName.INT64, Constants.ID));
+        builder.addField(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveType.PrimitiveTypeName.BINARY, Constants.MESSAGE));
+        builder.addField(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveType.PrimitiveTypeName.BINARY, Constants.TOPIC));
+        builder.addField(new PrimitiveType(Type.Repetition.OPTIONAL, PrimitiveType.PrimitiveTypeName.INT64, Constants.CREATE_TIME));
+        MessageType querySchema = builder.named(schemaName);
+        System.out.println("******querySchema.toString()********* : " + querySchema.toString());
+        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, querySchema.toString());
+
+        // set reader, withConf set specific fields (requested projection), withFilter set the filter.
+        // if omit withConf, it queries all fields
+        ParquetReader.Builder<Group> reader= ParquetReader
+                .builder(new GroupReadSupport(), new Path(filePath))
+                .withConf(configuration)
+                .withFilter(filter);
+
+        // read
+        ParquetReader<Group> build=reader.build();
+        Group line;
+        while((line=build.read())!=null)
+            System.out.println(line);
+
+        File file = new File(filePath);
+        file.delete();
     }
 
 

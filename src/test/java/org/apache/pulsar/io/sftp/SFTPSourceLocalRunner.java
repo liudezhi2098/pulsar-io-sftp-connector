@@ -18,17 +18,13 @@
  */
 package org.apache.pulsar.io.sftp;
 
-
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.pulsar.io.sftp.source.SFTPListingThread;
+import org.apache.pulsar.common.io.SourceConfig;
+import org.apache.pulsar.functions.LocalRunner;
 import org.apache.pulsar.io.sftp.source.SFTPSource;
-import org.apache.pulsar.io.sftp.source.SFTPSourceConfig;
-import org.testng.annotations.Ignore;
 
-@Ignore
-public class SFTPListingThreadTest {
-
+public class SFTPSourceLocalRunner {
     public static void main(String[] args) throws Exception {
         String host = "20.120.20.201";
         String username = "sftp_user";
@@ -43,11 +39,19 @@ public class SFTPListingThreadTest {
         config.put("inputDirectory", inputDirectory);
         config.put("movedDirectory", movedDirectory);
         config.put("illegalFileDirectory", illegalFileDirectory);
-        SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
-        sftpConfig.validate();
-        SFTPSource source = new SFTPSource();
-        source.setSFTPSourceConfig(sftpConfig);
-        Thread t = new SFTPListingThread(source);
-        t.start();
+
+
+        String brokerUrl = "pulsar://20.231.205.235:6650";
+        String topic = "sftp_file_source_test";
+        SourceConfig sourceConfig = new SourceConfig();
+        sourceConfig.setName("sftp_file_source");
+        sourceConfig.setClassName(SFTPSource.class.getName());
+        sourceConfig.setTenant("public");
+        sourceConfig.setNamespace("default");
+        sourceConfig.setConfigs(config);
+        sourceConfig.setTopicName(topic);
+        LocalRunner runner = LocalRunner.builder().sourceConfig(sourceConfig).brokerServiceUrl(brokerUrl).build();
+        runner.start(false);
+
     }
 }

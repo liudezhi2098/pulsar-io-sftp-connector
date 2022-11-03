@@ -31,7 +31,7 @@ public class Constants {
     public static final String MESSAGE  = "message";
     public static final String CREATE_TIME  = "create_time";
     public static final String PARQUET_SCHEMA  = "message " + SCHEMA_NAME + " {\n"
-            + "  optional binary " + ID + ";\n"
+            + "  optional int64 " + ID + ";\n"
             + "  optional binary " + TOPIC + ";\n"
             + "  optional binary " + MESSAGE + ";\n"
             + "  optional int64 " + CREATE_TIME + ";\n"

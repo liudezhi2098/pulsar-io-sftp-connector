@@ -26,8 +26,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
@@ -58,6 +56,13 @@ public class FileSinkConfig implements Serializable {
      * The number of worker threads that will be processing the files.
      */
     private Integer numWorkers = 1;
+
+    /**
+     * The logic that generates the message to the file.
+     * MessageToRawFileWriter : Single message generates raw file.
+     * MessageToParquetFileWriter : Single message as one record in parquet file.
+     */
+    private String fileWriteClass = "org.apache.pulsar.io.sftp.sink.MessageToParquetFileWriter";
 
     //parquet config version
     /**
@@ -155,6 +160,14 @@ public class FileSinkConfig implements Serializable {
 
         if (StringUtils.isNotBlank(parquetWriterMode) && !parquetWriterModeList.contains(parquetWriterMode)) {
             throw new IllegalArgumentException("Invalid property provided for parquetWriterMode : " + parquetWriterMode + " , must be include in : " + parquetWriterModeList);
+        }
+
+        if (StringUtils.isNotBlank(fileWriteClass)) {
+            try {
+                Class.forName(fileWriteClass);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
 
     }
