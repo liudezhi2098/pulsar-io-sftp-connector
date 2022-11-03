@@ -40,7 +40,7 @@ import org.apache.commons.io.IOUtils;
 @Slf4j
 public class SFTPUtil {
 
-    private ChannelSftp sftp;
+    private ChannelSftp channel;
     private Session session;
     private String username;
     private String password;
@@ -62,8 +62,9 @@ public class SFTPUtil {
         this.privateKey = privateKey;
     }
 
-    private void checkState() {
-        if (session == null || sftp == null || !session.isConnected() || !sftp.isConnected() || sftp.isClosed()) {
+    private void reconnectIfNecessary() {
+        if (session == null || !session.isConnected()
+                || channel == null || !channel.isConnected()) {
             try {
                 logout();
                 login();
@@ -90,9 +91,9 @@ public class SFTPUtil {
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
             session.connect();
-            Channel channel = session.openChannel("sftp");
-            channel.connect();
-            sftp = (ChannelSftp) channel;
+            Channel channelObj = (ChannelSftp) session.openChannel("sftp");
+            channelObj.connect();
+            channel = (ChannelSftp) channelObj;
 
         } catch (JSchException e) {
             log.error("Failed to login the sftp server ", e);
@@ -103,9 +104,9 @@ public class SFTPUtil {
      * close server.
      */
     public void logout() {
-        if (sftp != null) {
-            if (sftp.isConnected()) {
-                sftp.disconnect();
+        if (channel != null) {
+            if (channel.isConnected()) {
+                channel.disconnect();
             }
         }
         if (session != null) {
@@ -123,9 +124,9 @@ public class SFTPUtil {
      * @throws SftpException
      */
     public Vector<ChannelSftp.LsEntry> listFiles(String directory) {
-        checkState();
+        reconnectIfNecessary();
         try {
-            return sftp.ls(directory);
+            return channel.ls(directory);
         } catch (SftpException e) {
             log.error("List files in directory : {} failed", directory, e);
         }
@@ -140,8 +141,8 @@ public class SFTPUtil {
      * @throws Exception
      */
     public void rename(String oldFilePath, String newFilePath) throws SftpException {
-        checkState();
-        sftp.rename(oldFilePath, newFilePath);
+        reconnectIfNecessary();
+        channel.rename(oldFilePath, newFilePath);
     }
 
     /**
@@ -151,10 +152,10 @@ public class SFTPUtil {
      * @param uploadFile
      */
     public void upload(String directory, String uploadFile) {
-        checkState();
+        reconnectIfNecessary();
         try {
             File file = new File(uploadFile);
-            sftp.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
+            channel.put(Files.newInputStream(file.toPath()), directory + "/" + file.getName());
             log.info("File: '{}' is upload to '{}' success", uploadFile, directory);
         } catch (SftpException | IOException e) {
             log.error("Upload file '{}' to  remote directory '{}' failed", uploadFile, directory, e);
@@ -170,10 +171,10 @@ public class SFTPUtil {
      * @return
      */
     public long getFileSize(String directory, String downloadFile) {
-        checkState();
+        reconnectIfNecessary();
         if (directory != null && !"".equals(directory)) {
             try {
-                SftpATTRS sftpATTRS = sftp.lstat(directory + "/" + downloadFile);
+                SftpATTRS sftpATTRS = channel.lstat(directory + "/" + downloadFile);
                 long fileSize = sftpATTRS.getSize();
                 return fileSize;
             } catch (SftpException e) {
@@ -193,11 +194,11 @@ public class SFTPUtil {
      * @return
      */
     public byte[] download(String directory, String downloadFile) {
-        checkState();
+        reconnectIfNecessary();
         if (directory != null && !"".equals(directory)) {
             try {
                 long startTime = System.currentTimeMillis();
-                InputStream is = sftp.get(directory + "/" + downloadFile);
+                InputStream is = channel.get(directory + "/" + downloadFile);
                 byte[] fileData = IOUtils.toByteArray(is);
                 is.close();
                 long useTime = System.currentTimeMillis() - startTime;
@@ -222,7 +223,7 @@ public class SFTPUtil {
      * @param fileList
      */
     public void recursiveDownloadFile(String directory, List<byte[]> fileList, Boolean isRecursive) {
-        checkState();
+        reconnectIfNecessary();
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
@@ -242,10 +243,10 @@ public class SFTPUtil {
      * @return
      */
     public boolean isDirExist(String directory) {
-        checkState();
+        reconnectIfNecessary();
         boolean isDirExistFlag = false;
         try {
-            SftpATTRS sftpATTRS = sftp.lstat(directory);
+            SftpATTRS sftpATTRS = channel.lstat(directory);
             isDirExistFlag = true;
             return sftpATTRS.isDir();
         } catch (Exception e) {
@@ -262,9 +263,9 @@ public class SFTPUtil {
      * @param directory
      */
     public void createDir(String directory) {
-        checkState();
+        reconnectIfNecessary();
         try {
-            sftp.mkdir(directory);
+            channel.mkdir(directory);
             log.info("Create directory '{}' success", directory);
         } catch (SftpException e) {
             log.error("Create directory '{}' failed", directory, e);
@@ -280,7 +281,7 @@ public class SFTPUtil {
      * @param index
      */
     public void createDirIfNotExist(String[] dirs, String tempPath, int length, int index) {
-        checkState();
+        reconnectIfNecessary();
         index++;
         if (index < length) {
             tempPath += "/" + dirs[index];
@@ -289,10 +290,10 @@ public class SFTPUtil {
         }
         try {
             if (isDirExist(tempPath)) {
-                sftp.cd(tempPath);
+                channel.cd(tempPath);
             } else {
-                sftp.mkdir(tempPath);
-                sftp.cd(tempPath);
+                channel.mkdir(tempPath);
+                channel.cd(tempPath);
             }
             if (index < length) {
                 createDirIfNotExist(dirs, tempPath, length, index);
@@ -300,8 +301,8 @@ public class SFTPUtil {
         } catch (SftpException ex) {
             log.error("create directory [{}]", tempPath, ex);
             try {
-                sftp.mkdir(tempPath);
-                sftp.cd(tempPath);
+                channel.mkdir(tempPath);
+                channel.cd(tempPath);
             } catch (SftpException e) {
                 log.error("create directory [{}] failed", tempPath,  e);
             }
@@ -316,9 +317,9 @@ public class SFTPUtil {
      * @param directory
      */
     public void removeDir(String directory) {
-        checkState();
+        reconnectIfNecessary();
         try {
-            sftp.rmdir(directory);
+            channel.rmdir(directory);
             log.info("Remove directory '{}' success", directory);
         } catch (SftpException e) {
             log.error("Remove directory '{}' failed", directory,  e);
@@ -331,8 +332,8 @@ public class SFTPUtil {
      * @param deleteFilePath
      */
     public void deleteFile(String deleteFilePath) throws SftpException {
-        checkState();
-        sftp.rm(deleteFilePath);
+        reconnectIfNecessary();
+        channel.rm(deleteFilePath);
         log.info("delete file {} is delete success", deleteFilePath);
     }
 
@@ -342,7 +343,7 @@ public class SFTPUtil {
      * @param directory
      */
     public void recursiveDeleteFile(String directory) throws SftpException {
-        checkState();
+        reconnectIfNecessary();
         Vector<ChannelSftp.LsEntry> fileAndFolderList = listFiles(directory);
         for (ChannelSftp.LsEntry item : fileAndFolderList) {
             if (!item.getAttrs().isDir()) {
