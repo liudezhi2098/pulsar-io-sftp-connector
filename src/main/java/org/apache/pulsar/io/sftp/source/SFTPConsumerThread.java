@@ -105,12 +105,14 @@ public class SFTPConsumerThread extends TaskThread {
             throws SFTPFileNotExistException, NoSuchAlgorithmException, IOException {
         String fileName = fileInfo.getFileName();
         String currentDirectory = fileInfo.getDirectory();
+        String realAbsolutePath = fileInfo.getRealAbsolutePath();
         String modifiedTime = fileInfo.getModifiedTime();
         byte[] file = sftp.download(currentDirectory, fileName);
         if (file == null) {
             throw new SFTPFileNotExistException(String.format("%s/%s not exist!", currentDirectory, fileName));
         }
-        SFTPSourceRecord record = new SFTPSourceRecord(fileName, file, currentDirectory, modifiedTime);
+        SFTPSourceRecord record = new SFTPSourceRecord(fileName, file, currentDirectory, realAbsolutePath,
+                modifiedTime);
         sftpSource.consume(record);
     }
 
