@@ -49,4 +49,4 @@ configs:
 ```
 mvn clean install -Dmaven.test.skip=true  
 ```
-2. find `pulsar-io-sftp-connector-2.10.1-SNAPSHOT.jar` in target folder
+2. find `pulsar-io-sftp-connector-2.10.1-SNAPSHOT.nar` in target folder
