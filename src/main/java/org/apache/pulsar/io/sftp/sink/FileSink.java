@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
 
 public class FileSink extends AbstractSink<byte[]> {
 
+    private static final Logger log = LoggerFactory.getLogger(FileSink.class);
     private FileSinkConfig fileSinkConfig;
     private ExecutorService executor;
     private BlockingQueue<Record<byte[]>> records;
-    private static final Logger log = LoggerFactory.getLogger(FileSink.class);
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {

@@ -92,7 +92,7 @@ public class SFTPSource extends PushSource<byte[]> {
                 pulsarClient.close();
             }
         } catch (PulsarClientException e) {
-            log.error("PulsarClientException error",e);
+            log.error("PulsarClientException error", e);
         }
 
     }

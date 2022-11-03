@@ -37,7 +37,7 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.sftp.utils.Constants;
 
 /**
- * Write files to local disk in parquet format
+ * Write files to local disk in parquet format.
  */
 @Slf4j
 public class MessageToParquetFileWriter implements MessageFileWriter<byte[]> {
@@ -50,12 +50,13 @@ public class MessageToParquetFileWriter implements MessageFileWriter<byte[]> {
         String parquetFileName = "file.parquet";
         String parquetFilePath = outDirectory + "/" + parquetFileName;
         org.apache.parquet.hadoop.ParquetFileWriter.Mode mode;
-        if("create".equals(sinkConfig.getParquetWriterMode())){
+        if ("create".equals(sinkConfig.getParquetWriterMode())) {
             mode = org.apache.parquet.hadoop.ParquetFileWriter.Mode.CREATE;
-        } else if("overwrite".equals(sinkConfig.getParquetWriterMode())){
+        } else if ("overwrite".equals(sinkConfig.getParquetWriterMode())) {
             mode = org.apache.parquet.hadoop.ParquetFileWriter.Mode.OVERWRITE;
         } else {
-            throw new IllegalStateException("Illegal config [parquetWriterMode] : " + sinkConfig.getParquetWriterMode() + " !");
+            throw new IllegalStateException(
+                    "Illegal config [parquetWriterMode] : " + sinkConfig.getParquetWriterMode() + " !");
         }
         ParquetWriter writer = null;
         try {
@@ -89,7 +90,7 @@ public class MessageToParquetFileWriter implements MessageFileWriter<byte[]> {
             log.error("Write parquet file error", e);
         } finally {
             try {
-                if(writer != null){
+                if (writer != null) {
                     writer.close();
                 }
             } catch (IOException e) {

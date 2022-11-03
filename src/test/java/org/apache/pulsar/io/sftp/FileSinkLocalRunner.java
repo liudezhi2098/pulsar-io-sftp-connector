@@ -28,7 +28,7 @@ import org.apache.pulsar.io.sftp.sink.FileSink;
 public class FileSinkLocalRunner {
 
     public static void main(String[] args) throws Exception {
-        String brokerUrl = "pulsar://20.231.205.235:6650";
+        String brokerUrl = "pulsar://127.0.0.1:6650";
         String topic = "sftp_file_source_test";
 
         SinkConfig sinkConfig = new SinkConfig();
@@ -39,12 +39,12 @@ public class FileSinkLocalRunner {
         sinkConfig.setInputs(Arrays.asList(topic));
         sinkConfig.setSourceSubscriptionName("source_sub");
 
-        Map<String,Object> conf = new HashMap<>();
-        conf.put("outDirectory","/Users/fujun/Desktop");
-        conf.put("parquetWriterVersion","v2");
-        conf.put("parquetWriterMode","create");
+        Map<String, Object> conf = new HashMap<>();
+        conf.put("outDirectory", "/Users/fujun/Desktop");
+        conf.put("parquetWriterVersion", "v2");
+        conf.put("parquetWriterMode", "create");
         //conf.put("fileWriteClass","org.apache.pulsar.io.sftp.sink.MessageToParquetFileWriter");
-        conf.put("fileWriteClass","org.apache.pulsar.io.sftp.sink.MessageToRawFileWriter");
+        conf.put("fileWriteClass", "org.apache.pulsar.io.sftp.sink.MessageToRawFileWriter");
 
         sinkConfig.setConfigs(conf);
 

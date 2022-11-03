@@ -30,7 +30,7 @@ import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 
 /**
- * Write files to local disk in parquet format
+ * Write files to local disk in parquet format.
  */
 @Slf4j
 public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
@@ -45,8 +45,10 @@ public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
             String fileName = sinkConfig.getOutDirectory() + "/" + name;
             String originalMD5 = msg.getProperty(Constants.FILE_MD5);
             String currentMD5 = FileUtil.getFileMD5(contents);
-            if(!Objects.equals(originalMD5,currentMD5)){
-                throw new IllegalStateException("The md5 value of the current file : " + name + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : " + originalMD5 + ".");
+            if (!Objects.equals(originalMD5, currentMD5)) {
+                throw new IllegalStateException("The md5 value of the current file : " + name
+                        + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : "
+                        + originalMD5 + ".");
             }
             File writeFile = new File(fileName);
             if (writeFile.exists()) {

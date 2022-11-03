@@ -40,12 +40,12 @@ import org.apache.parquet.hadoop.ParquetWriter;
 public class FileSinkConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final List<String> parquetWriterVersionList = Arrays.asList("v1","v2");
+    private static final List<String> parquetWriterVersionList = Arrays.asList("v1", "v2");
 
-    private static final List<String> parquetWriterModeList= Arrays.asList("create","overwrite");
+    private static final List<String> parquetWriterModeList = Arrays.asList("create", "overwrite");
 
     private static final List<String>
-            compressionCodecNameList = Arrays.asList("SNAPPY","LZO","BROTLI","LZ4","GZIP","ZSTD");
+            compressionCodecNameList = Arrays.asList("SNAPPY", "LZO", "BROTLI", "LZ4", "GZIP", "ZSTD");
 
     /**
      * The output directory from which to pull files.
@@ -101,10 +101,11 @@ public class FileSinkConfig implements Serializable {
     private Integer dictionaryPageSize = ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE;
 
     /**
-     * Set the maximum amount of padding, in bytes, that will be used to align row groups with blocks in the underlying filesystem.
+     * Set the maximum amount of padding, in bytes, that will be used to align row groups with blocks in the
+     * underlying filesystem.
      * If the underlying filesystem is not a block filesystem like HDFS, this has no effect.
      */
-    private Integer maxPaddingSize  = ParquetWriter.MAX_PADDING_SIZE_DEFAULT;
+    private Integer maxPaddingSize = ParquetWriter.MAX_PADDING_SIZE_DEFAULT;
 
     /**
      * Set the Parquet format row group size used by the constructed writer.
@@ -127,7 +128,8 @@ public class FileSinkConfig implements Serializable {
         if (StringUtils.isBlank(outDirectory)) {
             throw new IllegalArgumentException("Required property not set.");
         } else if (outDirectory.endsWith("/")) {
-            throw new IllegalArgumentException("Specified illegal out directory : '" + outDirectory + "'  cannot end with '/'");
+            throw new IllegalArgumentException(
+                    "Specified illegal out directory : '" + outDirectory + "'  cannot end with '/'");
         }
 
         if (numWorkers != null && numWorkers <= 0) {
@@ -151,15 +153,20 @@ public class FileSinkConfig implements Serializable {
         }
 
         if (StringUtils.isNotBlank(compressionCodecName) && !compressionCodecNameList.contains(compressionCodecName)) {
-            throw new IllegalArgumentException("Invalid property provided for compressionCodecName : " + compressionCodecName + " , if set must be include in : " + compressionCodecNameList);
+            throw new IllegalArgumentException(
+                    "Invalid property provided for compressionCodecName : " + compressionCodecName
+                            + " , if set must be include in : " + compressionCodecNameList);
         }
 
         if (StringUtils.isNotBlank(parquetWriterVersion) && !parquetWriterVersionList.contains(parquetWriterVersion)) {
-            throw new IllegalArgumentException("Invalid property provided for parquetWriterVersion : " + parquetWriterVersion + " , must be include in : " + parquetWriterVersionList);
+            throw new IllegalArgumentException(
+                    "Invalid property provided for parquetWriterVersion : " + parquetWriterVersion
+                            + " , must be include in : " + parquetWriterVersionList);
         }
 
         if (StringUtils.isNotBlank(parquetWriterMode) && !parquetWriterModeList.contains(parquetWriterMode)) {
-            throw new IllegalArgumentException("Invalid property provided for parquetWriterMode : " + parquetWriterMode + " , must be include in : " + parquetWriterModeList);
+            throw new IllegalArgumentException("Invalid property provided for parquetWriterMode : " + parquetWriterMode
+                    + " , must be include in : " + parquetWriterModeList);
         }
 
         if (StringUtils.isNotBlank(fileWriteClass)) {
