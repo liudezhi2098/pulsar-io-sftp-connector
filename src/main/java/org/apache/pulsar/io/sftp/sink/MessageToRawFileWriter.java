@@ -42,14 +42,13 @@ public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
             Message<byte[]> msg = record.getMessage().get();
             byte[] contents = msg.getValue();
             String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
-            String fileName = sinkConfig.getOutDirectory() + "/" + name;
-            String originalMD5 = msg.getProperty(Constants.FILE_MD5);
-            String currentMD5 = FileUtil.getFileMD5(contents);
-            if (!Objects.equals(originalMD5, currentMD5)) {
-                throw new IllegalStateException("The md5 value of the current file : " + name
-                        + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : "
-                        + originalMD5 + ".");
+            String sftpPath = msg.getProperty(Constants.FILE_ABSOLUTE_PATH);
+            String fileName = sinkConfig.getOutDirectory() + "/" + sftpPath + "/" + name;
+            File path = new File(sinkConfig.getOutDirectory() + "/" + sftpPath);
+            if (!path.exists()) {
+                path.mkdirs();
             }
+            String originalMD5 = msg.getProperty(Constants.FILE_MD5);
             File writeFile = new File(fileName);
             if (writeFile.exists()) {
                 writeFile.delete();
@@ -63,8 +62,16 @@ public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
             randomFile.write(contents);
             randomFile.close();
             randomFile = null;
-        } catch (IOException | NoSuchAlgorithmException e) {
+            String currentMD5 = FileUtil.getFileMD5(contents);
+            if (!Objects.equals(originalMD5, currentMD5)) {
+                throw new IllegalStateException("The md5 value of the current file : " + name
+                        + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : "
+                        + originalMD5 + ".");
+            }
+        } catch (IOException e) {
             e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
         } finally {
             if (randomFile != null) {
                 try {

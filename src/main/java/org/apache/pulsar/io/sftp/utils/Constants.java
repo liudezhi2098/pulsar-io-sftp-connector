@@ -22,7 +22,8 @@ public class Constants {
 
     public static final String FILE_NAME = "file.name";
     public static final String FILE_MD5 = "file.md5";
-    public static final String FILE_ABSOLUTE_PATH = "file.path";
+    public static final String FILE_PATH = "file.path";
+    public static final String FILE_ABSOLUTE_PATH = "file.path.absolute";
     public static final String FILE_MODIFIED_TIME = "file.modified.time";
 
     public static final String SCHEMA_NAME  = "Record";
