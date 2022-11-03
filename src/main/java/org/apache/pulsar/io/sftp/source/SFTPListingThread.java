@@ -96,6 +96,8 @@ public class SFTPListingThread extends TaskThread {
                     }
                     if (!listing.isEmpty()) {
                         // remove any files that have been or are currently being processed.
+                        Set<SFTPFileInfo> listingSwap = new HashSet<>();
+                        listingSwap.addAll(listing);
                         listing.removeAll(lastFileslisting);
                         if (sftpConfig.getKeepFile()) {
                             listing.removeAll(recentlyProcessed);
@@ -117,7 +119,7 @@ public class SFTPListingThread extends TaskThread {
                                 }
                             }
                         }
-                        lastFileslisting = listing;
+                        lastFileslisting = listingSwap;
                     }
                 } finally {
                     listingLock.unlock();
