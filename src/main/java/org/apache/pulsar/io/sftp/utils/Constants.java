@@ -22,7 +22,20 @@ public class Constants {
 
     public static final String FILE_NAME = "file.name";
     public static final String FILE_MD5 = "file.md5";
-
     public static final String FILE_ABSOLUTE_PATH = "file.path";
     public static final String FILE_MODIFIED_TIME = "file.modified.time";
+
+    public static final String SCHEMA_NAME  = "Record";
+    public static final String ID  = "id";
+    public static final String TOPIC  = "topic";
+    public static final String MESSAGE  = "message";
+    public static final String CREATE_TIME  = "create_time";
+    public static final String PARQUET_SCHEMA  = "message " + SCHEMA_NAME + " {\n"
+            + "  optional int64 " + ID + ";\n"
+            + "  optional binary " + TOPIC + ";\n"
+            + "  optional binary " + MESSAGE + ";\n"
+            + "  optional int64 " + CREATE_TIME + ";\n"
+            + "}";
+
+
 }

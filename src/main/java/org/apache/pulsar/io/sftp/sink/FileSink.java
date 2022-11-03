@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
 import org.slf4j.Logger;
@@ -30,10 +31,10 @@ import org.slf4j.LoggerFactory;
 
 public class FileSink extends AbstractSink<byte[]> {
 
+    private static final Logger log = LoggerFactory.getLogger(FileSink.class);
     private FileSinkConfig fileSinkConfig;
     private ExecutorService executor;
     private BlockingQueue<Record<byte[]>> records;
-    private static final Logger log = LoggerFactory.getLogger(FileSink.class);
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
@@ -56,6 +57,20 @@ public class FileSink extends AbstractSink<byte[]> {
         } catch (InterruptedException e) {
             record.fail();
             log.error("error", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        if (executor != null) {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+            }
         }
     }
 

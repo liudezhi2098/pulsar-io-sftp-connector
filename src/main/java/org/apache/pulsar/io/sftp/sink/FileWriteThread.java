@@ -18,22 +18,17 @@
  */
 package org.apache.pulsar.io.sftp.sink;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import org.apache.pulsar.client.api.Message;
+import java.lang.reflect.Method;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.sftp.utils.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Worker thread that consumes the contents of the files
  * and publishes them to a Pulsar topic.
  */
+@Slf4j
 public class FileWriteThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(FileWriteThread.class);
     private final FileSink sink;
 
     public FileWriteThread(FileSink sink) {
@@ -41,47 +36,28 @@ public class FileWriteThread extends Thread {
     }
 
     public void run() {
+        FileSinkConfig sinkConf = sink.getFileSinkConfig();
         try {
+            Class clazz = Class.forName(sinkConf.getFileWriteClass());
+            Object obj = clazz.newInstance();
+            Method method = clazz.getDeclaredMethod("writeToStorage", Record.class, FileSinkConfig.class);
             while (true) {
                 Record<byte[]> record = sink.getQueue().take();
                 try {
-                    writeToFile(record);
+                    method.invoke(obj, record, sinkConf);
                     record.ack();
                 } catch (Exception e) {
                     record.fail();
-                    log.error("error", e);
+                    log.error("FileWriteThread run error", e);
                 }
             }
-        } catch (InterruptedException ie) {
+        } catch (InterruptedException e) {
             // just terminate
-        }
-    }
-
-    private void writeToFile(Record<byte[]> record) throws IOException {
-        RandomAccessFile randomFile = null;
-        try {
-            Message<byte[]> msg = record.getMessage().get();
-            byte[] contents = msg.getValue();
-            String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
-            String fileName = sink.getFileSinkConfig().getOutDirectory() + "/" + name;
-            String md5 = msg.getProperty(Constants.FILE_MD5);
-            File writeFile = new File(fileName);
-            if (writeFile.exists()) {
-                writeFile.delete();
-            }
-            randomFile = new RandomAccessFile(fileName, "rw");
-            randomFile.seek(randomFile.length());
-            randomFile.write(contents);
-            randomFile.close();
-            randomFile = null;
-        } finally {
-            if (randomFile != null) {
-                try {
-                    randomFile.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            //todo
+            e.printStackTrace();
+        } catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 }
