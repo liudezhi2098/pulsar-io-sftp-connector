@@ -31,6 +31,7 @@ This plugin supports these configuration options.
 | numWorkers                    |               int,default is 1                | No       | The number of worker threads that will be processing the files.                                      |
 | sftpTaskTopic                 |         string,default is "sftp_task"         | No       | Synchronization tasks topic name.                                                                    |
 | sftpTaskTopicSubscriptionName |       string,default is "sftp_task_sub"       | No       | Synchronization tasks subscript name.                                                                |
+| taskProgressTopic             |   string,default is "taskProgress"            | No       | record task progress topic name.                                                                     |
 
 # Example
 sftp-source-config.yaml

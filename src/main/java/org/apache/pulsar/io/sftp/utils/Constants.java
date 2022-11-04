@@ -26,6 +26,10 @@ public class Constants {
     public static final String FILE_ABSOLUTE_PATH = "file.path.absolute";
     public static final String FILE_MODIFIED_TIME = "file.modified.time";
 
+    public static final String TASK_PROGRESS_SFTP = "task.progress.sftp";
+    public static final String TASK_PROGRESS_SOURCE_TYPE = "source";
+    public static final String TASK_PROGRESS_SINK_TYPE = "sink";
+
     public static final String SCHEMA_NAME  = "Record";
     public static final String ID  = "id";
     public static final String TOPIC  = "topic";

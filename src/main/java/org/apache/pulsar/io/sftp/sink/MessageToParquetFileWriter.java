@@ -43,8 +43,8 @@ import org.apache.pulsar.io.sftp.utils.Constants;
 public class MessageToParquetFileWriter implements MessageFileWriter<byte[]> {
 
     @Override
-    public void writeToStorage(Record<byte[]> record, FileSinkConfig sinkConfig) {
-
+    public void writeToStorage(Record<byte[]> record, FileSink fileSink) {
+        FileSinkConfig sinkConfig = fileSink.getFileSinkConfig();
         String outDirectory = sinkConfig.getOutDirectory();
         //todo
         String parquetFileName = "file.parquet";

@@ -129,12 +129,18 @@ public class SFTPSourceConfig implements Serializable {
      * Used to distribute synchronization tasks,
      * The producer has only one instance listening to the directory through WaitForExclusive mode.
      */
-    private String sftpTaskTopic = "sftp_task";
+    private String sftpTaskTopic;
+
+    /**
+     * record task progress topic name.
+     */
+    private String taskProgressTopic = "taskProgress";
 
     /**
      * synchronization tasks subscript name.
      */
-    private String sftpTaskTopicSubscriptionName = "sftp_task_sub";
+    private String sftpTaskTopicSubscriptionName;
+
 
     public static SFTPSourceConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -164,12 +170,9 @@ public class SFTPSourceConfig implements Serializable {
             throw new IllegalArgumentException("Property password & privateKey cannot be both set.");
         }
 
-        if (StringUtils.isBlank(sftpTaskTopic)) {
-            throw new IllegalArgumentException("property sftpTaskTopic can not empty.");
-        }
 
-        if (StringUtils.isBlank(sftpTaskTopicSubscriptionName)) {
-            throw new IllegalArgumentException("Required property sftpTaskTopicSubscriptionName can not empty.");
+        if (StringUtils.isBlank(taskProgressTopic)) {
+            throw new IllegalArgumentException("Required property taskProgressTopic can not empty.");
         }
 
         if (maximumSize != null && maximumSize < 0) {

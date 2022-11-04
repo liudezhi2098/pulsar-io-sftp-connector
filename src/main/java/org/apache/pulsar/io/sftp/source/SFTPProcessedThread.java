@@ -21,7 +21,7 @@ package org.apache.pulsar.io.sftp.source;
 import com.jcraft.jsch.SftpException;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pulsar.io.sftp.common.SFTPTaskState;
+import org.apache.pulsar.io.sftp.common.TaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
@@ -53,7 +53,7 @@ public class SFTPProcessedThread extends TaskThread {
                 } catch (SftpException e) {
                     log.error("move or delete file [{}/[]] error", record.getDirectory(), record.getFileName(), e);
                 }
-                record.setState(SFTPTaskState.Success);
+                record.setState(TaskState.Success);
             }
         } catch (InterruptedException e) {
             // just terminate
@@ -69,7 +69,7 @@ public class SFTPProcessedThread extends TaskThread {
                     sftpConfig.getInputDirectory() + "/" + absolutePath;
             String newFilePath = Objects.equals(".", absolutePath) ? sftpConfig.getMovedDirectory() :
                     sftpConfig.getMovedDirectory() + "/" + absolutePath;
-            if (fileInfo.getState() == SFTPTaskState.Failed) {
+            if (fileInfo.getState() == TaskState.Failed) {
                 newFilePath =  sftpConfig.getIllegalFileDirectory() + "/" + fileInfo.getRealAbsolutePath();
             }
             //if `movedDirectory` not existed, create it

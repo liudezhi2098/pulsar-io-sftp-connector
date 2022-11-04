@@ -18,7 +18,7 @@
  */
 package org.apache.pulsar.io.sftp.common;
 
-public enum SFTPTaskState {
+public enum TaskState {
         None,
         AddWorkQueue,
         InProcess,

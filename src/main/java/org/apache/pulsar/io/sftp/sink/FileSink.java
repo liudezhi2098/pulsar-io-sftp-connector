@@ -24,8 +24,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
+import org.apache.pulsar.io.sftp.common.TaskProgress;
+import org.apache.pulsar.io.sftp.common.TaskState;
+import org.apache.pulsar.io.sftp.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +38,7 @@ public class FileSink extends AbstractSink<byte[]> {
 
     private static final Logger log = LoggerFactory.getLogger(FileSink.class);
     private FileSinkConfig fileSinkConfig;
+    private Producer<TaskProgress> producer;
     private ExecutorService executor;
     private BlockingQueue<Record<byte[]>> records;
 
@@ -41,6 +47,11 @@ public class FileSink extends AbstractSink<byte[]> {
         records = new LinkedBlockingQueue<>();
         FileSinkConfig fileSinkConfig = FileSinkConfig.load(config);
         fileSinkConfig.validate();
+
+        producer = sinkContext.getPulsarClient().newProducer(Schema.JSON(TaskProgress.class))
+                .topic(fileSinkConfig.getTaskProgressTopic())
+                .sendTimeout(0, TimeUnit.SECONDS)
+                .create();
         this.fileSinkConfig = fileSinkConfig;
         // One extra for the File listing thread, and another for the cleanup thread
         executor = Executors.newFixedThreadPool(fileSinkConfig.getNumWorkers());
@@ -82,4 +93,19 @@ public class FileSink extends AbstractSink<byte[]> {
         return records;
     }
 
+    public void sentTaskProgress(Record<byte[]> record, TaskState taskState) {
+        String currentDirectory = record.getProperties().get(Constants.FILE_PATH);
+        String realAbsolutePath = record.getProperties().get(Constants.FILE_ABSOLUTE_PATH);
+        String fileName = record.getProperties().get(Constants.FILE_NAME);
+        String modifiedTime = record.getProperties().get(Constants.FILE_MODIFIED_TIME);
+        TaskProgress taskProgress = new TaskProgress(currentDirectory + fileName, Constants.TASK_PROGRESS_SFTP,
+                Constants.TASK_PROGRESS_SINK_TYPE);
+        taskProgress.setTimestamp((int) (System.currentTimeMillis() / 1000));
+        taskProgress.setProperty("currentDirectory", currentDirectory);
+        taskProgress.setProperty("realAbsolutePath", realAbsolutePath);
+        taskProgress.setProperty("fileName", fileName);
+        taskProgress.setProperty("modifiedTime", modifiedTime);
+        taskProgress.setState(taskState);
+        this.producer.sendAsync(taskProgress);
+    }
 }
