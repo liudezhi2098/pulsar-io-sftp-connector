@@ -6,7 +6,17 @@ It is fully free and fully open source. The license is Apache 2.0, meaning you a
 
 This Connector is used to write each file in the specified directory on the sftp server into pulsar in the form of a
 message.
-![image](https://user-images.githubusercontent.com/33149602/199864595-2d1a0d46-74c5-4385-9595-8cbcca91bc56.png)
+![image](https://user-images.githubusercontent.com/33149602/199865567-43776801-f120-4f83-a17e-4d9e0d38e4df.png)
+* TaskProgress
+ 
+| Settings                      |                  Output type                   | Explanation                                                                                           |
+|-------------------------------|:---------------------------------------------: |:----------------------------------------------------------------------------------------------------- |
+| taskId                        |                    string                      | taskId                                                                                                 |
+| taskType                      |                    string                      | taskType, such as : source,sink                                                                       |
+| taskCategory                  |                    string                      | taskCategory, such as : task.progress.sftp                                                             |
+| timestamp                     |                    int                         | timestamp                                                                                             |
+| taskProperties                |                    string                      | taskProperties  Map<String, String>                                                                   |
+| state                         |                    string                      | state, such as : Success, Failed                                                                       |
 
 # Pulsar Sftp Source Configuration Options
 
