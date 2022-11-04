@@ -40,11 +40,11 @@ public class FileWriteThread extends Thread {
         try {
             Class clazz = Class.forName(sinkConf.getFileWriteClass());
             Object obj = clazz.newInstance();
-            Method method = clazz.getDeclaredMethod("writeToStorage", Record.class, FileSinkConfig.class);
+            Method method = clazz.getDeclaredMethod("writeToStorage", Record.class, FileSink.class);
             while (true) {
                 Record<byte[]> record = sink.getQueue().take();
                 try {
-                    method.invoke(obj, record, sinkConf);
+                    method.invoke(obj, record, sink);
                     record.ack();
                 } catch (Exception e) {
                     record.fail();

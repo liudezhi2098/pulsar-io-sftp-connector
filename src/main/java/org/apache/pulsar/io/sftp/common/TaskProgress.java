@@ -16,29 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.sftp.source;
+package org.apache.pulsar.io.sftp.common;
 
+import java.util.HashMap;
 import java.util.Objects;
 import lombok.Data;
-import org.apache.pulsar.io.sftp.common.TaskState;
 
 @Data
-public class SFTPFileInfo {
+public class TaskProgress {
     private static final long serialVersionUID = 1L;
-    private String fileName;
-    private String directory;
-    private String realAbsolutePath;
-    private int modifiedTime;
+    private String taskId;
+    private String taskType;
+    private String taskCategory;
+    private int timestamp;
     private TaskState state = TaskState.None;
+    private final HashMap<String, String> taskProperties = new HashMap<String, String>();
 
-    public SFTPFileInfo() {
+    public TaskProgress() {
     }
 
-    public SFTPFileInfo(String fileName, String directory, String realAbsolutePath, int modifiedTime) {
-        this.fileName = fileName;
-        this.directory = directory;
-        this.realAbsolutePath = realAbsolutePath;
-        this.modifiedTime = modifiedTime;
+    public TaskProgress(String taskId, String taskCategory, String taskType) {
+        this.taskId = taskId;
+        this.taskCategory = taskCategory;
+        this.taskType = taskType;
+    }
+
+    public void setProperty(String key, String value) {
+        taskProperties.put(key, value);
     }
 
     @Override
@@ -46,19 +50,17 @@ public class SFTPFileInfo {
         if (this == obj) {
             return true;
         }
-        if (obj == null || !(obj instanceof SFTPFileInfo)) {
+        if (obj == null || !(obj instanceof TaskProgress)) {
             return false;
         }
-        SFTPFileInfo fileInfo = (SFTPFileInfo) obj;
-        return fileInfo.fileName.equals(this.fileName)
-                && fileInfo.directory.equals(this.directory)
-                && fileInfo.realAbsolutePath.equals(this.realAbsolutePath)
-                && fileInfo.modifiedTime == this.modifiedTime;
+        TaskProgress fileInfo = (TaskProgress) obj;
+        return fileInfo.taskId.equals(this.taskId)
+                && fileInfo.taskType.equals(this.taskType)
+                && fileInfo.taskCategory.equals(this.taskCategory);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fileName, directory, realAbsolutePath, modifiedTime);
+        return Objects.hash(taskId, taskType, taskCategory);
     }
-
 }

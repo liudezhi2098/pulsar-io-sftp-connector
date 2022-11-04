@@ -6,6 +6,17 @@ It is fully free and fully open source. The license is Apache 2.0, meaning you a
 
 This Connector is used to write each file in the specified directory on the sftp server into pulsar in the form of a
 message.
+![image](https://user-images.githubusercontent.com/33149602/199865567-43776801-f120-4f83-a17e-4d9e0d38e4df.png)
+* TaskProgress
+ 
+| Settings                      |                  Output type                   | Explanation                                                                                           |
+|-------------------------------|:---------------------------------------------: |:----------------------------------------------------------------------------------------------------- |
+| taskId                        |                    string                      | taskId                                                                                                 |
+| taskType                      |                    string                      | taskType, such as : source,sink                                                                       |
+| taskCategory                  |                    string                      | taskCategory, such as : task.progress.sftp                                                             |
+| timestamp                     |                    int                         | timestamp                                                                                             |
+| taskProperties                |                    string                      | taskProperties  Map<String, String>                                                                   |
+| state                         |                    string                      | state, such as : Success, Failed                                                                       |
 
 # Pulsar Sftp Source Configuration Options
 
@@ -31,6 +42,7 @@ This plugin supports these configuration options.
 | numWorkers                    |               int,default is 1                | No       | The number of worker threads that will be processing the files.                                      |
 | sftpTaskTopic                 |         string,default is "sftp_task"         | No       | Synchronization tasks topic name.                                                                    |
 | sftpTaskTopicSubscriptionName |       string,default is "sftp_task_sub"       | No       | Synchronization tasks subscript name.                                                                |
+| taskProgressTopic             |   string,default is "taskProgress"            | No       | record task progress topic name.                                                                     |
 
 # Example
 sftp-source-config.yaml
@@ -42,6 +54,11 @@ configs:
  inputDirectory: "/sftpdata/input"
  movedDirectory: "/sftpdata/moved"
  illegalFileDirectory: "/sftpdata/illegal_file"
+ taskProgressTopic: taskProgress
+ sftpTaskTopic: sftp_task
+ sftpTaskTopicSubscriptionName: sftp_task_sub
+ numWorkers: 10
+ 
 ```
 
 # Build

@@ -21,5 +21,5 @@ package org.apache.pulsar.io.sftp.sink;
 import org.apache.pulsar.functions.api.Record;
 
 public interface MessageFileWriter<T> {
-     void writeToStorage(Record<T> record, FileSinkConfig sinkConfig);
+     void writeToStorage(Record<T> record, FileSink fileSink);
 }

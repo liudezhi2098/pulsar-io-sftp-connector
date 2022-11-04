@@ -112,6 +112,10 @@ public class FileSinkConfig implements Serializable {
      */
     private Long defaultBlockSize = 134217728L;
 
+    /**
+     * synchronization tasks progress topic.
+     */
+    private String taskProgressTopic = "taskProgress";
 
     public static FileSinkConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -167,6 +171,10 @@ public class FileSinkConfig implements Serializable {
         if (StringUtils.isNotBlank(parquetWriterMode) && !parquetWriterModeList.contains(parquetWriterMode)) {
             throw new IllegalArgumentException("Invalid property provided for parquetWriterMode : " + parquetWriterMode
                     + " , must be include in : " + parquetWriterModeList);
+        }
+
+        if (StringUtils.isBlank(taskProgressTopic)) {
+            throw new IllegalArgumentException("Required property taskProgressTopic can not empty.");
         }
 
         if (StringUtils.isNotBlank(fileWriteClass)) {

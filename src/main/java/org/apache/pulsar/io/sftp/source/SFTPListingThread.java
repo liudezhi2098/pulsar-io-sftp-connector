@@ -35,7 +35,7 @@ import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.ProducerAccessMode;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
-import org.apache.pulsar.io.sftp.common.SFTPTaskState;
+import org.apache.pulsar.io.sftp.common.TaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
 
@@ -107,7 +107,7 @@ public class SFTPListingThread extends TaskThread {
                             String fileName = fileInfo.getFileName();
                             if (!inProcess.contains(fileInfo)
                                     && !recentlyProcessed.contains(fileInfo)) {
-                                fileInfo.setState(SFTPTaskState.AddWorkQueue);
+                                fileInfo.setState(TaskState.AddWorkQueue);
                                 try {
                                     producer.send(fileInfo);
                                     queueLastUpdated.set(System.currentTimeMillis());
@@ -155,7 +155,7 @@ public class SFTPListingThread extends TaskThread {
                     String realAbsolutePath = currentDirectory.replaceFirst(baseDirectory, "")
                             .replaceFirst("/", "");
                     SFTPFileInfo fileInfo = new SFTPFileInfo(fileName, currentDirectory, realAbsolutePath,
-                            item.getAttrs().getAtimeString());
+                            item.getAttrs().getATime());
                     if (listing.size() <= sftpConfig.getMaxFileNumListing()) {
                         listing.add(fileInfo);
                     } else {

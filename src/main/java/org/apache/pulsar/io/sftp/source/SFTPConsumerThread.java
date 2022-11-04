@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.PulsarClientException;
-import org.apache.pulsar.io.sftp.common.SFTPTaskState;
+import org.apache.pulsar.io.sftp.common.TaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.exception.SFTPFileNotExistException;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
@@ -60,7 +60,7 @@ public class SFTPConsumerThread extends TaskThread {
                     SFTPFileInfo fileInfo = msg.getValue();
                     boolean added = false;
                     do {
-                        fileInfo.setState(SFTPTaskState.AddWorkQueue);
+                        fileInfo.setState(TaskState.AddWorkQueue);
                         added = this.sftpSource.getInProcess().add(fileInfo);
                     } while (!added);
                     consumeFile(fileInfo);
@@ -79,8 +79,12 @@ public class SFTPConsumerThread extends TaskThread {
 
     private void consumeFile(SFTPFileInfo fileInfo) {
         try {
-            filterLargerFile(fileInfo);
-            process(fileInfo);
+            if (!filterLargerFile(fileInfo)) {
+                process(fileInfo);
+                sftpSource.sentTaskProgress(fileInfo, TaskState.Success);
+            } else {
+                sftpSource.sentTaskProgress(fileInfo, TaskState.Failed);
+            }
             boolean removed = false;
             do {
                 removed = this.sftpSource.getInProcess().remove(fileInfo);
@@ -88,15 +92,15 @@ public class SFTPConsumerThread extends TaskThread {
 
             boolean added = false;
             do {
-                if (!fileInfo.getState().equals(SFTPTaskState.Failed)) {
-                    fileInfo.setState(SFTPTaskState.Ending);
+                if (!fileInfo.getState().equals(TaskState.Failed)) {
+                    fileInfo.setState(TaskState.Ending);
                 }
                 added = this.sftpSource.getRecentlyProcessed().add(fileInfo);
             } while (!added);
         } catch (SFTPFileNotExistException e) {
-            fileInfo.setState(SFTPTaskState.Failed);
+            fileInfo.setState(TaskState.Failed);
         } catch (IOException | NoSuchAlgorithmException e) {
-            fileInfo.setState(SFTPTaskState.Failed);
+            fileInfo.setState(TaskState.Failed);
             log.error("consumeFile[{}/{}] error:", fileInfo.getDirectory(), fileInfo.getFileName(), e);
         }
     }
@@ -106,7 +110,7 @@ public class SFTPConsumerThread extends TaskThread {
         String fileName = fileInfo.getFileName();
         String currentDirectory = fileInfo.getDirectory();
         String realAbsolutePath = fileInfo.getRealAbsolutePath();
-        String modifiedTime = fileInfo.getModifiedTime();
+        String modifiedTime = String.valueOf(fileInfo.getModifiedTime());
         byte[] file = sftp.download(currentDirectory, fileName);
         if (file == null) {
             throw new SFTPFileNotExistException(String.format("%s/%s not exist!", currentDirectory, fileName));
@@ -116,7 +120,7 @@ public class SFTPConsumerThread extends TaskThread {
         sftpSource.consume(record);
     }
 
-    private void filterLargerFile (SFTPFileInfo fileInfo) throws SFTPFileNotExistException {
+    private boolean filterLargerFile (SFTPFileInfo fileInfo) throws SFTPFileNotExistException {
         String fileName = fileInfo.getFileName();
         String currentDirectory = fileInfo.getDirectory();
         long fileSize = sftp.getFileSize(currentDirectory, fileName);
@@ -126,10 +130,13 @@ public class SFTPConsumerThread extends TaskThread {
         SFTPSourceConfig sftpSourceConfig = sftpSource.getSFTPSourceConfig();
         long maximumSize = sftpSourceConfig.getMaximumSize();
         if (fileSize > maximumSize) {
-            fileInfo.setState(SFTPTaskState.Failed);
+            fileInfo.setState(TaskState.Failed);
             String illegalFilePath =  sftpSourceConfig.getIllegalFileDirectory() + "/" + fileInfo.getRealAbsolutePath();
             log.warn("{} file size[{}] > maximumSize[{}], will be moved to illegal file path '{}'",
                     currentDirectory + "/" + fileName, fileSize, maximumSize, illegalFilePath);
+            return true;
+        } else {
+            return false;
         }
     }
 

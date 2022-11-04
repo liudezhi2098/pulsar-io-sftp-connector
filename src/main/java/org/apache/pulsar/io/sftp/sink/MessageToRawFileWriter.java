@@ -26,6 +26,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.sftp.common.TaskState;
 import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.FileUtil;
 
@@ -36,7 +37,8 @@ import org.apache.pulsar.io.sftp.utils.FileUtil;
 public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
 
     @Override
-    public void writeToStorage(Record<byte[]> record, FileSinkConfig sinkConfig) {
+    public void writeToStorage(Record<byte[]> record, FileSink fileSink) {
+        FileSinkConfig sinkConfig = fileSink.getFileSinkConfig();
         RandomAccessFile randomFile = null;
         try {
             Message<byte[]> msg = record.getMessage().get();
@@ -64,9 +66,12 @@ public class MessageToRawFileWriter implements MessageFileWriter<byte[]> {
             randomFile = null;
             String currentMD5 = FileUtil.getFileMD5(contents);
             if (!Objects.equals(originalMD5, currentMD5)) {
+                fileSink.sentTaskProgress(record, TaskState.Failed);
                 throw new IllegalStateException("The md5 value of the current file : " + name
                         + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : "
                         + originalMD5 + ".");
+            } else {
+                fileSink.sentTaskProgress(record, TaskState.Success);
             }
         } catch (IOException e) {
             e.printStackTrace();
