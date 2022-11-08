@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -34,7 +33,6 @@ import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.parquet.column.ParquetProperties;
 import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.HWObsUtil;
 
 /**
@@ -107,7 +105,8 @@ public class OBSSinkConfig implements Serializable {
     private Integer dictionaryPageSize = ParquetProperties.DEFAULT_DICTIONARY_PAGE_SIZE;
 
     /**
-     * Set the maximum amount of padding, in bytes, that will be used to align row groups with blocks in the underlying filesystem.
+     * Set the maximum amount of padding, in bytes, that will be used to align row groups with blocks in the
+     * underlying filesystem.
      * If the underlying filesystem is not a block filesystem like HDFS, this has no effect.
      */
     private Integer maxPaddingSize = ParquetWriter.MAX_PADDING_SIZE_DEFAULT;
@@ -165,7 +164,8 @@ public class OBSSinkConfig implements Serializable {
     private Integer socketTimeout = 60000;
 
     /**
-     * If the idle time exceeds the set value of this parameter, the connection will be closed. Defaults to 30000 milliseconds.
+     * If the idle time exceeds the set value of this parameter, the connection will be closed. Defaults to 30000
+     * milliseconds.
      */
     private Integer idleConnectionTime = 30000;
 
@@ -289,7 +289,7 @@ public class OBSSinkConfig implements Serializable {
     private Boolean isBucketExist(String bucket) {
         ObsConfiguration conf = new ObsConfiguration();
         conf.setEndPoint(endPoint);
-        ObsClient obsClient = HWObsUtil.getObsClient(accessKey,secretKey,null,conf);
+        ObsClient obsClient = HWObsUtil.getObsClient(accessKey, secretKey, null, conf);
         return obsClient.headBucket(bucket);
     }
 }

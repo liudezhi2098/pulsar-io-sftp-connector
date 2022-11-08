@@ -22,5 +22,5 @@ import com.obs.services.ObsConfiguration;
 import org.apache.pulsar.functions.api.Record;
 
 public interface MessageOBSWriter<T> {
-     void writeToStorage(Record<T> record, OBSSink obsSink, ObsConfiguration conf);
+    void writeToStorage(Record<T> record, OBSSink obsSink, ObsConfiguration conf);
 }

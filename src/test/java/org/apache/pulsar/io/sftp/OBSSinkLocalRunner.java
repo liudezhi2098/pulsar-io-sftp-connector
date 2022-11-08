@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.common.io.SinkConfig;
 import org.apache.pulsar.functions.LocalRunner;
-import org.apache.pulsar.io.sftp.sink.FileSink;
 import org.apache.pulsar.io.sftp.sink.OBSSink;
 
 public class OBSSinkLocalRunner {
@@ -36,10 +35,12 @@ public class OBSSinkLocalRunner {
     public static void main(String[] args) throws Exception {
 
         String brokerUrl = "pulsar://20.231.205.235:6650";
-        String topic = "obs_sink_test";
+        String topic = "sftp_file_obs_test";
+        //String topic = "obs_sink_test";
 
         SinkConfig sinkConfig = new SinkConfig();
-        sinkConfig.setName("parquet_file_obs_sink");
+        //sinkConfig.setName("parquet_file_obs_sink");
+        sinkConfig.setName("sftp_file_obs_sink");
         sinkConfig.setClassName(OBSSink.class.getName());
         sinkConfig.setTenant("public");
         sinkConfig.setNamespace("default");
@@ -47,11 +48,12 @@ public class OBSSinkLocalRunner {
         sinkConfig.setSourceSubscriptionName("obs_sink_sub");
 
         Map<String, Object> conf = new HashMap<>();
-        conf.put("outDirectory", "/obs_test/parquet");
+        //conf.put("outDirectory", "/obs_test/parquet");
+        conf.put("outDirectory", "/obs_test/sftp");
         conf.put("parquetWriterVersion", "v2");
         conf.put("parquetWriterMode", "create");
-        conf.put("fileWriteClass","org.apache.pulsar.io.sftp.sink.MessageToParquetFileOBSWriter");
-        //conf.put("fileWriteClass", "org.apache.pulsar.io.sftp.sink.MessageToRawFileWriter");
+        //conf.put("fileWriteClass","org.apache.pulsar.io.sftp.sink.MessageToParquetFileOBSWriter");
+        conf.put("fileWriteClass", "org.apache.pulsar.io.sftp.sink.MessageToRawFileOBSWriter");
 
         conf.put("endPoint", endPoint);
         conf.put("accessKey", ak);

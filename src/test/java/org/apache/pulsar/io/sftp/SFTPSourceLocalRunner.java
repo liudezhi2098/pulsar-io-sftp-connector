@@ -29,8 +29,8 @@ public class SFTPSourceLocalRunner {
         String host = "20.120.20.201";
         String username = "sftp_user";
         String password = "12345678";
-        String inputDirectory = "/sftpdata/input";
-        String movedDirectory = "/sftpdata/moved";
+        String inputDirectory = "/sftpdata/fujun_input";
+        String movedDirectory = "/sftpdata/fujun_moved";
         String illegalFileDirectory = "/sftpdata/illegal_file";
         Map<String, Object> config = new HashMap<>();
         config.put("host", host);
@@ -41,7 +41,7 @@ public class SFTPSourceLocalRunner {
         config.put("illegalFileDirectory", illegalFileDirectory);
 
         String brokerUrl = "pulsar://20.231.205.235:6650";
-        String topic = "sftp_file_source_test";
+        String topic = "sftp_file_obs_test";
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setName("sftp_file_source");
         sourceConfig.setClassName(SFTPSource.class.getName());

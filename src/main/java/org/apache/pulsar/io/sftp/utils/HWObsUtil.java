@@ -18,11 +18,9 @@
  */
 package org.apache.pulsar.io.sftp.utils;
 
-import com.obs.services.BasicObsCredentialsProvider;
 import com.obs.services.OBSCredentialsProviderChain;
 import com.obs.services.ObsClient;
 import com.obs.services.ObsConfiguration;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 public class HWObsUtil {
@@ -34,24 +32,26 @@ public class HWObsUtil {
      * @param conf
      * @return
      */
-    public static ObsClient getObsClient(String accessKey,String secretKey,String securityToken,ObsConfiguration conf) {
+    public static ObsClient getObsClient(String accessKey, String secretKey, String securityToken,
+                                         ObsConfiguration conf) {
         if (obsClient == null) {
             synchronized (HWObsUtil.class) {
                 if (obsClient == null) {
-                    obsClient = createObsClient(accessKey,secretKey,securityToken,conf);
+                    obsClient = createObsClient(accessKey, secretKey, securityToken, conf);
                 }
             }
         }
         return obsClient;
     }
 
-    private static ObsClient createObsClient(String accessKey,String secretKey,String securityToken,ObsConfiguration conf) {
+    private static ObsClient createObsClient(String accessKey, String secretKey, String securityToken,
+                                             ObsConfiguration conf) {
         ObsClient obsClient;
-        if(StringUtils.isBlank(accessKey) && StringUtils.isBlank(secretKey) && StringUtils.isBlank(securityToken))
-            //First search from environment variables, then from the order of the ECS server
+        if (StringUtils.isBlank(accessKey) && StringUtils.isBlank(secretKey) && StringUtils.isBlank(securityToken)){
             obsClient = new ObsClient(new OBSCredentialsProviderChain(), conf);
-        else
+        } else {
             obsClient = new ObsClient(accessKey, secretKey, securityToken, conf);
+        }
         return obsClient;
     }
 

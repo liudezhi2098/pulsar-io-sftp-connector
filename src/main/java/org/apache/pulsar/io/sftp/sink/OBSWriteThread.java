@@ -48,12 +48,13 @@ public class OBSWriteThread extends Thread {
         try {
             Class clazz = Class.forName(sinkConf.getFileWriteClass());
             Object obj = clazz.newInstance();
-            Method method = clazz.getDeclaredMethod("writeToStorage", Record.class, OBSSink.class,ObsConfiguration.class);
+            Method method =
+                    clazz.getDeclaredMethod("writeToStorage", Record.class, OBSSink.class, ObsConfiguration.class);
 
             while (true) {
                 Record<byte[]> record = sink.getQueue().take();
                 try {
-                    method.invoke(obj, record, sink,obsConf);
+                    method.invoke(obj, record, sink, obsConf);
                     record.ack();
                 } catch (Exception e) {
                     record.fail();

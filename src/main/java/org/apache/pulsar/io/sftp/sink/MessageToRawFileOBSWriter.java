@@ -54,10 +54,12 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
             byte[] contents = msg.getValue();
             String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
             String sftpPath = msg.getProperty(Constants.FILE_ABSOLUTE_PATH);
-            String fileName = StringUtils.isNotBlank(sftpPath) ? outDirectory.replaceFirst("/","") + "/" + sftpPath + "/" + name :
-                              outDirectory.replaceFirst("/","") +  "/" + name ;
+            String fileName = StringUtils.isNotBlank(sftpPath)
+                    ? outDirectory.replaceFirst("/", "") + "/" + sftpPath + "/" + name
+                    : outDirectory.replaceFirst("/", "") + "/" + name;
             String originalMD5 = msg.getProperty(Constants.FILE_MD5);
-            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(),sinkConfig.getSecretKey(),sinkConfig.getSecurityToken(),conf);
+            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
+                    sinkConfig.getSecurityToken(), conf);
             PutObjectRequest request = new PutObjectRequest();
             request.setInput(new ByteArrayInputStream(contents));
             request.setBucketName(sinkConfig.getBucket());

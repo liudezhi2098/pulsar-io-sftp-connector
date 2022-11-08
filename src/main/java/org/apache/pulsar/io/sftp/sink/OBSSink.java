@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.io.sftp.sink;
 
-import java.io.File;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;

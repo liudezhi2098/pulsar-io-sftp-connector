@@ -24,7 +24,6 @@ import com.obs.services.model.PutObjectRequest;
 import com.obs.services.model.PutObjectResult;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
@@ -95,16 +94,18 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
             group.add(Constants.CREATE_TIME, new Date().getTime());
             writer.write(group);
 
+            //TODO
             //upload to obs bucket & delete temp file
             File file = new File(tempParquetFilePath);
             System.out.println("********* file path:" + tempParquetFilePath);
-            System.out.println("********* isFile :" +file.isFile());
-            System.out.println("********* file size : " +file.length());
-            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(),sinkConfig.getSecretKey(),sinkConfig.getSecurityToken(),conf);
+            System.out.println("********* isFile :" + file.isFile());
+            System.out.println("********* file size : " + file.length());
+            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
+                    sinkConfig.getSecurityToken(), conf);
             PutObjectRequest request = new PutObjectRequest();
             request.setFile(file);
             request.setBucketName(sinkConfig.getBucket());
-            request.setObjectKey((outDirectory + "/" + parquetFileName).replaceFirst("/",""));
+            request.setObjectKey((outDirectory + "/" + parquetFileName).replaceFirst("/", ""));
             request.setExpires(sinkConfig.getExpires());
             PutObjectResult result = obsClient.putObject(request);
             log.info("Put Object to OBS success , Path : " + result.getObjectUrl());

@@ -23,9 +23,6 @@ import com.obs.services.ObsConfiguration;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.pulsar.io.sftp.utils.Constants;
 import org.apache.pulsar.io.sftp.utils.HWObsUtil;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -33,21 +30,21 @@ import org.testng.annotations.Test;
 
 public class OBSUtilsTest {
 
-    private ObsClient obsClient;
     private static final String endPoint = "https://obs.cn-south-1.myhuaweicloud.com";
     private static final String ak = "SLEAG2U7NLRPKPXKCKKF";
     private static final String sk = "4fwVtIOgnFgfJOC56einSewKYZh6sknG66t36FhJ";
     private static final String bucket = "sn-poc-test";
+    private ObsClient obsClient;
 
     @BeforeTest
-    public void before(){
+    public void before() {
         ObsConfiguration conf = new ObsConfiguration();
         conf.setEndPoint(endPoint);
-        obsClient = HWObsUtil.getObsClient(ak,sk,null,conf);
+        obsClient = HWObsUtil.getObsClient(ak, sk, null, conf);
     }
 
     @AfterTest
-    public void after(){
+    public void after() {
         try {
             obsClient.close();
         } catch (IOException e) {
@@ -68,12 +65,13 @@ public class OBSUtilsTest {
 
     @Test
     public void uploadObjectTest() {
-        obsClient.putObject(bucket,"obs_test/parquet/file.parquet",new File("/Users/fujun/Downloads/obs_test/parquet/file.parquet"));
+        obsClient.putObject(bucket, "obs_test/parquet/file.parquet",
+                new File("/Users/fujun/Downloads/obs_test/parquet/file.parquet"));
     }
 
     @Test
     public void uploadTempObjectTest() {
-        obsClient.putObject(bucket,"obs_test/hello.txt",new ByteArrayInputStream("Hello OBS".getBytes()));
+        obsClient.putObject(bucket, "obs_test/hello.txt", new ByteArrayInputStream("Hello OBS".getBytes()));
     }
 
 }
