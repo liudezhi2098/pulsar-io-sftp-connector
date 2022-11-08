@@ -29,6 +29,7 @@ import java.io.RandomAccessFile;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.sftp.common.TaskState;
@@ -53,7 +54,8 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
             byte[] contents = msg.getValue();
             String name = new File(msg.getProperty(Constants.FILE_NAME)).getName();
             String sftpPath = msg.getProperty(Constants.FILE_ABSOLUTE_PATH);
-            String fileName = outDirectory + "/" + sftpPath + "/" + name;
+            String fileName = StringUtils.isNotBlank(sftpPath) ? outDirectory.replaceFirst("/","") + "/" + sftpPath + "/" + name :
+                              outDirectory.replaceFirst("/","") +  "/" + name ;
             String originalMD5 = msg.getProperty(Constants.FILE_MD5);
             ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(),sinkConfig.getSecretKey(),sinkConfig.getSecurityToken(),conf);
             PutObjectRequest request = new PutObjectRequest();

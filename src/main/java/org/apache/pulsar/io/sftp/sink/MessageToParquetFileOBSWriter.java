@@ -57,7 +57,7 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
         //TODO
         String parquetFileName = "file.parquet";
         // The file is temporarily stored in the server's directory and will be deleted after uploading obs
-        String tempParquetFilePath = "/Users/fujun/Downloads" + outDirectory + "/" + parquetFileName;
+        String tempParquetFilePath = "/temp" + outDirectory + "/" + parquetFileName;
         ParquetFileWriter.Mode mode;
         if ("create".equals(sinkConfig.getParquetWriterMode())) {
             mode = ParquetFileWriter.Mode.CREATE;
