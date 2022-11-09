@@ -54,9 +54,9 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
         OBSSinkConfig sinkConfig = obsSink.getOBSSinkConfig();
         String outDirectory = sinkConfig.getOutDirectory();
         //TODO
-        String parquetFileName = "file.parquet";
+        String parquetFileName = "file-" + new Date().getTime() + ".parquet";
         // The file is temporarily stored in the server's directory and will be deleted after uploading obs
-        String tempParquetFilePath = "/temp" + outDirectory + "/" + parquetFileName;
+        String tempParquetFilePath = "/tmp" + outDirectory + "/" + parquetFileName;
         ParquetFileWriter.Mode mode;
         if ("create".equals(sinkConfig.getParquetWriterMode())) {
             mode = ParquetFileWriter.Mode.CREATE;
@@ -93,13 +93,10 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
             group.add(Constants.MESSAGE, new String(record.getValue(), StandardCharsets.UTF_8));
             group.add(Constants.CREATE_TIME, new Date().getTime());
             writer.write(group);
+            writer.close();
 
-            //TODO
             //upload to obs bucket & delete temp file
             File file = new File(tempParquetFilePath);
-            System.out.println("********* file path:" + tempParquetFilePath);
-            System.out.println("********* isFile :" + file.isFile());
-            System.out.println("********* file size : " + file.length());
             ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
                     sinkConfig.getSecurityToken(), conf);
             PutObjectRequest request = new PutObjectRequest();
@@ -109,17 +106,9 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
             request.setExpires(sinkConfig.getExpires());
             PutObjectResult result = obsClient.putObject(request);
             log.info("Put Object to OBS success , Path : " + result.getObjectUrl());
-            //file.delete();
+            file.delete();
         } catch (IOException e) {
             log.error("Write parquet file error", e);
-        } finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException e) {
-                log.error("Close ParquetWriter error", e);
-            }
         }
     }
 }
