@@ -20,11 +20,14 @@ package org.apache.pulsar.io.sftp.sink;
 
 import com.obs.services.ObsClient;
 import com.obs.services.ObsConfiguration;
+import com.obs.services.model.ObsObject;
 import com.obs.services.model.PutObjectRequest;
 import com.obs.services.model.PutObjectResult;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
@@ -48,6 +51,7 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
 
         OBSSinkConfig sinkConfig = obsSink.getOBSSinkConfig();
         String outDirectory = sinkConfig.getOutDirectory();
+        String bucket =  sinkConfig.getBucket();
         RandomAccessFile randomFile = null;
         try {
             Message<byte[]> msg = record.getMessage().get();
@@ -58,24 +62,44 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
                     ? outDirectory.replaceFirst("/", "") + "/" + sftpPath + "/" + name
                     : outDirectory.replaceFirst("/", "") + "/" + name;
             String originalMD5 = msg.getProperty(Constants.FILE_MD5);
-            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
-                    sinkConfig.getSecurityToken(), conf);
-            PutObjectRequest request = new PutObjectRequest();
-            request.setInput(new ByteArrayInputStream(contents));
-            request.setBucketName(sinkConfig.getBucket());
-            request.setObjectKey(fileName);
-            request.setExpires(sinkConfig.getExpires());
-            PutObjectResult result = obsClient.putObject(request);
-            log.info("Put Object to OBS success , Path : " + result.getObjectUrl());
-
             String currentMD5 = FileUtil.getFileMD5(contents);
             if (!Objects.equals(originalMD5, currentMD5)) {
                 obsSink.sentTaskProgress(record, TaskState.Failed);
-                throw new IllegalStateException("The md5 value of the current file : " + name
+                log.error("The md5 value of the current file : " + name
                         + "  is inconsistent with the original file. Current md5 : " + currentMD5 + ". Original md5 : "
                         + originalMD5 + ".");
-            } else {
+                return;
+            }
+            ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
+                    sinkConfig.getSecurityToken(), conf);
+            if(obsClient.doesObjectExist(bucket,fileName)){
+                ObsObject obsObject = obsClient.getObject(bucket,fileName);
+                InputStream input = obsObject.getObjectContent();
+                byte[] b = new byte[1024];
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                int len;
+                while ((len=input.read(b)) != -1){
+                    bos.write(b, 0, len);
+                }
+                if (Objects.equals(originalMD5, FileUtil.getFileMD5(bos.toByteArray()))) {
+                    log.info("The Object : {} has existed in {} , do not upload again . " ,fileName,bucket);
+                    obsSink.sentTaskProgress(record, TaskState.Success);
+                    return;
+                }
+            }
+
+            PutObjectRequest request = new PutObjectRequest();
+            request.setInput(new ByteArrayInputStream(contents));
+            request.setBucketName(bucket);
+            request.setObjectKey(fileName);
+            request.setExpires(sinkConfig.getExpires());
+            PutObjectResult result = obsClient.putObject(request);
+            if(result.getStatusCode() == 200){
                 obsSink.sentTaskProgress(record, TaskState.Success);
+                log.info("Put Object to OBS success , Path : " + result.getObjectUrl());
+            } else {
+                obsSink.sentTaskProgress(record, TaskState.Failed);
+                log.error("Put Object to OBS Failed , Http Status Code : " + result.getStatusCode());
             }
         } catch (IOException e) {
             log.error("File operation error", e);

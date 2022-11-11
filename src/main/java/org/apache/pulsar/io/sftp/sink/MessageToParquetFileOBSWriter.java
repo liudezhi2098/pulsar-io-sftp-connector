@@ -18,6 +18,8 @@
  */
 package org.apache.pulsar.io.sftp.sink;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.obs.services.ObsClient;
 import com.obs.services.ObsConfiguration;
 import com.obs.services.model.PutObjectRequest;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.ParquetProperties;
@@ -54,7 +57,9 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
         OBSSinkConfig sinkConfig = obsSink.getOBSSinkConfig();
         String outDirectory = sinkConfig.getOutDirectory();
         //TODO
-        String parquetFileName = "file-" + new Date().getTime() + ".parquet";
+        String messageKey = record.getKey().get();
+        String messageValue = new String(record.getValue(), StandardCharsets.UTF_8);
+        String parquetFileName = buildParquetFileName(messageKey,messageValue);
         // The file is temporarily stored in the server's directory and will be deleted after uploading obs
         String tempParquetFilePath = "/tmp" + outDirectory + "/" + parquetFileName;
         ParquetFileWriter.Mode mode;
@@ -90,7 +95,7 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
             Group group = simpleGroupFactory.newGroup();
             group.add(Constants.ID, record.getMessage().get().getSequenceId());
             group.add(Constants.TOPIC, record.getTopicName().get());
-            group.add(Constants.MESSAGE, new String(record.getValue(), StandardCharsets.UTF_8));
+            group.add(Constants.MESSAGE, messageValue);
             group.add(Constants.CREATE_TIME, new Date().getTime());
             writer.write(group);
             writer.close();
@@ -110,5 +115,26 @@ public class MessageToParquetFileOBSWriter implements MessageOBSWriter<byte[]> {
         } catch (IOException e) {
             log.error("Write parquet file error", e);
         }
+    }
+
+    private String buildParquetFileName(String messageKey,String messageValue){
+        StringBuilder builder = new StringBuilder();
+        if(JSONObject.isValidObject(messageValue)){
+            JSONObject content = JSON.parseObject(messageValue);
+            if(content.containsKey("databaseName")){
+                String database = content.getString("databaseName");
+                builder.append(database).append("-");
+            }
+            if(content.containsKey("source")){
+                JSONObject source = content.getJSONObject("source");
+                if(source.containsKey("table")){
+                    String table = source.getString("table");
+                    builder.append(table).append("-");
+                }
+            }
+        } else if(StringUtils.isNotBlank(messageKey)) {
+            builder.append(messageKey).append("-");
+        }
+        return builder.append(new Date().getTime()).append(".parquet").toString();
     }
 }
