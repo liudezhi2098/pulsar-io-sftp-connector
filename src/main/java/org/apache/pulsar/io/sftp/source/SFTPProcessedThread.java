@@ -19,8 +19,8 @@
 package org.apache.pulsar.io.sftp.source;
 
 import com.jcraft.jsch.SftpException;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.sftp.common.TaskState;
 import org.apache.pulsar.io.sftp.common.TaskThread;
 import org.apache.pulsar.io.sftp.utils.SFTPUtil;
@@ -65,9 +65,9 @@ public class SFTPProcessedThread extends TaskThread {
         String fileName = fileInfo.getFileName();
         SFTPSourceConfig sftpConfig = sftpSource.getSFTPSourceConfig();
         if (sftpConfig.getKeepFile()) {
-            String oldFilePath = Objects.equals(".", absolutePath) ? sftpConfig.getInputDirectory() :
+            String oldFilePath = StringUtils.isBlank(absolutePath) ? sftpConfig.getInputDirectory() :
                     sftpConfig.getInputDirectory() + "/" + absolutePath;
-            String newFilePath = Objects.equals(".", absolutePath) ? sftpConfig.getMovedDirectory() :
+            String newFilePath = StringUtils.isBlank(absolutePath) ? sftpConfig.getMovedDirectory() :
                     sftpConfig.getMovedDirectory() + "/" + absolutePath;
             if (fileInfo.getState() == TaskState.Failed) {
                 newFilePath =  sftpConfig.getIllegalFileDirectory() + "/" + fileInfo.getRealAbsolutePath();
@@ -81,7 +81,7 @@ public class SFTPProcessedThread extends TaskThread {
             log.info(String.format("moved file %s from '%s' to '%s'", fileName, oldFilePath + "/"
                             + fileName, newFilePath + "/" + fileName));
         } else {
-            String filePath = Objects.equals(".", absolutePath) ? sftpConfig.getInputDirectory() + "/" + fileName :
+            String filePath = StringUtils.isBlank(absolutePath) ? sftpConfig.getInputDirectory() + "/" + fileName :
                     sftpConfig.getInputDirectory() + "/" + absolutePath + "/" + fileName;
             sftp.deleteFile(filePath);
             log.info(String.format("Deleted file %s on '%s'", fileName, filePath));

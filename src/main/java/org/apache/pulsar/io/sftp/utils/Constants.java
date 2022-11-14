@@ -30,6 +30,13 @@ public class Constants {
     public static final String TASK_PROGRESS_SOURCE_TYPE = "source";
     public static final String TASK_PROGRESS_SINK_TYPE = "sink";
 
+    public static final String OBS_END_POINT = "endPoint";
+    public static final String OBS_ACCESS_KEY = "accessKey";
+    public static final String OBS_SECRET_KEY = "secretKey";
+    public static final String OBS_SECURITY_TOKEN = "securityToken";
+
+
+
     public static final String SCHEMA_NAME  = "Record";
     public static final String ID  = "id";
     public static final String TOPIC  = "topic";
