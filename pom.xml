@@ -42,6 +42,7 @@
 
         <!-- connector dependencies -->
         <jackson.version>2.13.2</jackson.version>
+        <jackson.databind.version>2.13.4.1</jackson.databind.version>
         <lombok.version>1.18.22</lombok.version>
         <pulsar.version>2.10.1.8</pulsar.version>
         <logback-classic.version>1.4.4</logback-classic.version>
@@ -98,7 +99,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.databind.version}</version>
         </dependency>
 
         <dependency>

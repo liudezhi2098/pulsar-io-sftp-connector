@@ -72,17 +72,17 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
             }
             ObsClient obsClient = HWObsUtil.getObsClient(sinkConfig.getAccessKey(), sinkConfig.getSecretKey(),
                     sinkConfig.getSecurityToken(), conf);
-            if(obsClient.doesObjectExist(bucket,fileName)){
-                ObsObject obsObject = obsClient.getObject(bucket,fileName);
+            if (obsClient.doesObjectExist(bucket, fileName)) {
+                ObsObject obsObject = obsClient.getObject(bucket, fileName);
                 InputStream input = obsObject.getObjectContent();
                 byte[] b = new byte[1024];
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 int len;
-                while ((len=input.read(b)) != -1){
+                while ((len = input.read(b)) != -1) {
                     bos.write(b, 0, len);
                 }
                 if (Objects.equals(originalMD5, FileUtil.getFileMD5(bos.toByteArray()))) {
-                    log.info("The Object : {} has existed in {} , do not upload again . " ,fileName,bucket);
+                    log.info("The Object : {} has existed in {} , do not upload again . ", fileName, bucket);
                     obsSink.sentTaskProgress(record, TaskState.Success);
                     return;
                 }
@@ -94,7 +94,7 @@ public class MessageToRawFileOBSWriter implements MessageOBSWriter<byte[]> {
             request.setObjectKey(fileName);
             request.setExpires(sinkConfig.getExpires());
             PutObjectResult result = obsClient.putObject(request);
-            if(result.getStatusCode() == 200){
+            if (result.getStatusCode() == 200) {
                 obsSink.sentTaskProgress(record, TaskState.Success);
                 log.info("Put Object to OBS success , Path : " + result.getObjectUrl());
             } else {
