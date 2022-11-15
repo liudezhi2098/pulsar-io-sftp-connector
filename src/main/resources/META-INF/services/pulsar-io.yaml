@@ -19,7 +19,7 @@
 
 name: sftp
 description: Reads data from sftp filesystem
-sinkClass: org.apache.pulsar.io.sftp.sink.FileSink
-sinkConfigClass: org.apache.pulsar.io.sftp.sink.FileSinkConfig
+sinkClass: org.apache.pulsar.io.sftp.sink.OBSSink
+sinkConfigClass: org.apache.pulsar.io.sftp.sink.OBSSinkConfig
 sourceClass: org.apache.pulsar.io.sftp.source.SFTPSource
 sourceConfigClass: org.apache.pulsar.io.sftp.source.SFTPSourceConfig

@@ -179,7 +179,6 @@ public class OBSSinkConfig implements Serializable {
      */
     private Integer maxConnections = 1000;
 
-
     public static OBSSinkConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         return mapper.readValue(new File(yamlFile), OBSSinkConfig.class);

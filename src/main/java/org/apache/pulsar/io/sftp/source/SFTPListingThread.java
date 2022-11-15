@@ -120,6 +120,8 @@ public class SFTPListingThread extends TaskThread {
                             }
                         }
                         lastFileslisting = listingSwap;
+                    } else {
+                        lastFileslisting.clear();
                     }
                 } finally {
                     listingLock.unlock();

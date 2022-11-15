@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.sftp;
 
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Message;
@@ -36,11 +37,10 @@ import org.testng.annotations.Test;
 public class TaskProgressTest {
 
     @Test
-    public void listFilesTest() throws PulsarClientException {
+    public void taskProgressTest() throws PulsarClientException {
         PulsarClient client = PulsarClient.builder()
-                .serviceUrl("pulsar://127.0.0.1:6650")
+                .serviceUrl("pulsar://20.25.99.94:6650")
                 .build();
-
         ConcurrentHashMap<String, ConcurrentHashSet<String>> successSourceTask = new ConcurrentHashMap<>();
         ConcurrentHashMap<String, ConcurrentHashSet<String>> failedSourceTask = new ConcurrentHashMap<>();
 
@@ -53,6 +53,7 @@ public class TaskProgressTest {
                     @Override
                     public void received(Consumer<TaskProgress> consumer, Message<TaskProgress> msg) {
                         TaskProgress taskProgress = msg.getValue();
+                        System.out.println(taskProgress);
                         String path = taskProgress.getTaskProperties().get("currentDirectory");
                         if (taskProgress.getTaskType().equals(Constants.TASK_PROGRESS_SOURCE_TYPE)) {
                             if (taskProgress.getState().equals(TaskState.Success)) {
@@ -92,7 +93,7 @@ public class TaskProgressTest {
                         }
                     }
                 })
-                .topic("sftpProgress-1")
+                .topic("sftp-task-progress")
                 .subscriptionName("sftpProgress-sub")
                 .subscribe();
         new Thread(new Runnable() {
@@ -111,7 +112,7 @@ public class TaskProgressTest {
                                 + " failed:" + (failedSinkTask.get(entry.getKey()) != null
                                 ? failedSinkTask.get(entry.getKey()).size() : 0));
                     });
-                    System.out.println("--------------------------------");
+                    System.out.println("----------------" + new Date() + "----------------");
                     try {
                         Thread.sleep(3000);
                     } catch (InterruptedException e) {
