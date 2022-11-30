@@ -36,9 +36,9 @@ import org.testng.annotations.Test;
 //@Ignore
 public class SFTPUtilTest {
 
-    String username = "sftp_user";
-    String password = "12345678";
-    String host = "20.120.20.201";
+    String username = "sftpuser";
+    String password = "poc_123456";
+    String host = "190.92.232.213";
 
 
     @Test
@@ -157,7 +157,7 @@ public class SFTPUtilTest {
     public void putFileTest() throws SftpException, IOException {
         SFTPUtil sftp = new SFTPUtil(username, password, host, 22);
         sftp.login();
-        String path = "/sftpdata/poc/";
+        String path = "/data/sftp/test/";
         if (!sftp.isDirExist(path)) {
             sftp.createDir(path);
         }
