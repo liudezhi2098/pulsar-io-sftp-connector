@@ -26,6 +26,7 @@ import lombok.Data;
 public class TaskProgress {
     private static final long serialVersionUID = 1L;
     private String taskId;
+    private String taskName;
     private String taskType;
     private String taskCategory;
     private int timestamp;
@@ -35,10 +36,11 @@ public class TaskProgress {
     public TaskProgress() {
     }
 
-    public TaskProgress(String taskId, String taskCategory, String taskType) {
+    public TaskProgress(String taskId, String taskCategory, String taskType, String taskName) {
         this.taskId = taskId;
         this.taskCategory = taskCategory;
         this.taskType = taskType;
+        this.taskName = taskName;
     }
 
     public void setProperty(String key, String value) {
@@ -56,6 +58,7 @@ public class TaskProgress {
         TaskProgress fileInfo = (TaskProgress) obj;
         return fileInfo.taskId.equals(this.taskId)
                 && fileInfo.taskType.equals(this.taskType)
+                && fileInfo.taskName.equals(this.taskName)
                 && fileInfo.taskCategory.equals(this.taskCategory);
     }
 

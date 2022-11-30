@@ -42,13 +42,14 @@ public class OBSSink extends AbstractSink<byte[]> {
     private Producer<TaskProgress> producer;
     private ExecutorService executor;
     private BlockingQueue<Record<byte[]>> records;
+    private String sinkName;
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
         records = new LinkedBlockingQueue<>();
         OBSSinkConfig sinkConfig = OBSSinkConfig.load(config);
         sinkConfig.validate();
-
+        sinkName = sinkContext.getSinkName();
         producer = sinkContext.getPulsarClient().newProducer(Schema.JSON(TaskProgress.class))
                 .topic(sinkConfig.getTaskProgressTopic())
                 .sendTimeout(0, TimeUnit.SECONDS)
@@ -100,7 +101,7 @@ public class OBSSink extends AbstractSink<byte[]> {
         String fileName = record.getProperties().get(Constants.FILE_NAME);
         String modifiedTime = record.getProperties().get(Constants.FILE_MODIFIED_TIME);
         TaskProgress taskProgress = new TaskProgress(currentDirectory + fileName, Constants.TASK_PROGRESS_SFTP,
-                Constants.TASK_PROGRESS_SINK_TYPE);
+                Constants.TASK_PROGRESS_SINK_TYPE, sinkName);
         taskProgress.setTimestamp((int) (System.currentTimeMillis() / 1000));
         taskProgress.setProperty("currentDirectory", currentDirectory);
         taskProgress.setProperty("realAbsolutePath", realAbsolutePath);

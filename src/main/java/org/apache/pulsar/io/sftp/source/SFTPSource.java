@@ -56,9 +56,11 @@ public class SFTPSource extends PushSource<byte[]> {
     private PulsarClient pulsarClient = null;
     private Consumer<SFTPFileInfo> consumer = null;
     private Producer<TaskProgress> producer = null;
+    private String sourceName;
     @Override
     public void open(Map<String, Object> config, SourceContext sourceContext) throws Exception {
         SFTPSourceConfig sftpConfig = SFTPSourceConfig.load(config);
+        sourceName = sourceContext.getSourceName();
         sftpConfig.validate();
         String sftpTaskTopic = sftpConfig.getSftpTaskTopic();
         String taskTopicSubscription = sftpConfig.getSftpTaskTopicSubscriptionName();
@@ -107,7 +109,7 @@ public class SFTPSource extends PushSource<byte[]> {
         String fileName = fileInfo.getFileName();
         String modifiedTime = String.valueOf(fileInfo.getModifiedTime());
         TaskProgress taskProgress = new TaskProgress(currentDirectory + fileName, Constants.TASK_PROGRESS_SFTP,
-                Constants.TASK_PROGRESS_SOURCE_TYPE);
+                Constants.TASK_PROGRESS_SOURCE_TYPE, sourceName);
         taskProgress.setTimestamp((int) (System.currentTimeMillis() / 1000));
         taskProgress.setProperty("currentDirectory", currentDirectory);
         taskProgress.setProperty("realAbsolutePath", realAbsolutePath);
