@@ -213,7 +213,7 @@ public class SFTPSourceConfig implements Serializable {
         } else if (isLegalSuffix(movedDirectory)) {
             throw new IllegalArgumentException(
                     "Specified moved directory : '" + movedDirectory + "'  cannot end with '/'");
-        } else if (!isSftpDirExist(inputDirectory)) {
+        } else if (!isSftpDirExist(movedDirectory)) {
             throw new IllegalArgumentException(
                     "Specified moved directory : '" + movedDirectory + "'  does not exist in sftp server.");
         }
